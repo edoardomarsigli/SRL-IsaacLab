@@ -100,14 +100,14 @@ class EventCfg:
         params={"pose_range": {"yaw": (-3.14,3.14)}, "velocity_range": {}},
     )
 
-    # reset_robot_joints = EventTerm(
-    #     func=mdp.reset_joints_by_offset,
-    #     mode="reset",
-    #     params={
-    #         "position_range": (-0.2, 0.2),
-    #         "velocity_range": (-0.1, 0.1),
-    #     },
-    # )
+    reset_robot_joints = EventTerm(
+        func=mdp.reset_joints_by_offset,
+        mode="reset",
+        params={
+            "position_range": (-0.0, 0.0),
+            "velocity_range": (-0.0, 0.0),
+        },
+    )
 
 
 @configclass
