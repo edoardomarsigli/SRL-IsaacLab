@@ -143,7 +143,7 @@ class MoonbotWheelEnvCfg(ManagerBasedRLEnvCfg):
     """Configuration for Moonbot Wheel environment."""
 
     # Scene settings
-    scene: MySceneCfg = MySceneCfg(num_envs=4096, env_spacing=5.0)
+    scene: MySceneCfg = MySceneCfg(num_envs=4096, env_spacing=2.5)
     # Basic settings
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()
@@ -156,7 +156,7 @@ class MoonbotWheelEnvCfg(ManagerBasedRLEnvCfg):
         """Post initialization."""
         # general settings
         self.decimation = 2
-        self.episode_length_s = 16.0
+        self.episode_length_s = 10.0
         # simulation settings
         self.sim.dt = 1 / 120.0
         self.sim.render_interval = self.decimation
