@@ -42,14 +42,14 @@ MOONBOT_WHEEL_CFG = ArticulationCfg(
             effort_limit=400.0,
             velocity_limit=100.0,
             stiffness=0.0,
-            damping=0.0,
+            damping=10.0,
         ),
         "leg3_wheel_right_actuator": ImplicitActuatorCfg(
             joint_names_expr=["leg3_wheel_right_joint"],
             effort_limit=400.0,
             velocity_limit=100.0,
             stiffness=0.0,
-            damping=0.0,
+            damping=10.0,
         ),
     },
 )

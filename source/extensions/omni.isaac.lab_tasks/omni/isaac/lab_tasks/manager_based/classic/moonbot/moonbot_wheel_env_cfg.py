@@ -17,7 +17,7 @@ from omni.isaac.lab.scene import InteractiveSceneCfg
 from omni.isaac.lab.terrains import TerrainImporterCfg
 from omni.isaac.lab.utils import configclass
 
-import omni.isaac.lab_tasks.manager_based.classic.humanoid.mdp as mdp
+import omni.isaac.lab_tasks.manager_based.classic.moonbot.mdp as mdp
 from omni.isaac.lab.utils.assets import ISAAC_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR
 ##
 # Pre-defined configs
@@ -29,40 +29,40 @@ from omni.isaac.lab_tasks.manager_based.classic.moonbot.rough import ROUGH_TERRA
 class MySceneCfg(InteractiveSceneCfg):
     """Configuration for the terrain scene with an Moonbot Wheel robot."""
 
-    # # terrain (flat plane)
-    # terrain = TerrainImporterCfg(
-    #     prim_path="/World/ground",
-    #     terrain_type="plane",
-    #     collision_group=-1,
-    #     physics_material=sim_utils.RigidBodyMaterialCfg(
-    #         friction_combine_mode="average",
-    #         restitution_combine_mode="average",
-    #         static_friction=1.0,
-    #         dynamic_friction=1.0,
-    #         restitution=0.0,
-    #     ),
-    #     debug_vis=False,
-    # )
-    # terrain (rough)
+    # terrain (flat plane)
     terrain = TerrainImporterCfg(
         prim_path="/World/ground",
-        terrain_type="generator",
-        terrain_generator=ROUGH_TERRAINS_CFG,
-        max_init_terrain_level=5,
+        terrain_type="plane",
         collision_group=-1,
         physics_material=sim_utils.RigidBodyMaterialCfg(
-            friction_combine_mode="multiply",
-            restitution_combine_mode="multiply",
+            friction_combine_mode="average",
+            restitution_combine_mode="average",
             static_friction=1.0,
             dynamic_friction=1.0,
-        ),
-        visual_material=sim_utils.MdlFileCfg(
-            mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
-            project_uvw=True,
-            texture_scale=(0.25, 0.25),
+            restitution=0.0,
         ),
         debug_vis=False,
     )
+    # terrain (rough)
+    # terrain = TerrainImporterCfg(
+    #     prim_path="/World/ground",
+    #     terrain_type="generator",
+    #     terrain_generator=ROUGH_TERRAINS_CFG,
+    #     max_init_terrain_level=5,
+    #     collision_group=-1,
+    #     physics_material=sim_utils.RigidBodyMaterialCfg(
+    #         friction_combine_mode="multiply",
+    #         restitution_combine_mode="multiply",
+    #         static_friction=1.0,
+    #         dynamic_friction=1.0,
+    #     ),
+    #     visual_material=sim_utils.MdlFileCfg(
+    #         mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
+    #         project_uvw=True,
+    #         texture_scale=(0.25, 0.25),
+    #     ),
+    #     debug_vis=False,
+    # )
     # robot
     robot = MOONBOT_WHEEL_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
 
@@ -82,7 +82,7 @@ class MySceneCfg(InteractiveSceneCfg):
 class ActionsCfg:
     """Action specifications for the MDP."""
 
-    joint_effort = mdp.JointEffortActionCfg(asset_name="robot", joint_names=[".*"], scale=7.5)
+    joint_effort = mdp.JointVelocityActionCfg(asset_name="robot", joint_names=[".*"], scale=1)
 
 
 @configclass
@@ -135,15 +135,20 @@ class RewardsCfg:
     """Reward terms for the MDP."""
 
     # (1) Reward for moving forward
-    progress = RewTerm(func=mdp.progress_reward, weight=0.5, params={"target_pos": (1000.0, 0.0, 0.0)})
+    progress = RewTerm(func=mdp.progress_reward, weight=1.0, params={"target_pos": (1000.0, 0.0, 0.0)})
     # # (3) Reward for non-upright posture
     # upright = RewTerm(func=mdp.upright_posture_bonus, weight=0.1, params={"threshold": 0.93})
     # (4) Reward for moving in the right direction
     move_to_target = RewTerm(
-        func=mdp.move_to_target_bonus, weight=0.5, params={"threshold": 0.995, "target_pos": (1000.0, 0.0, 0.0)}
+        func=mdp.move_to_target_bonus, weight=0.5, params={"threshold": 0.99, "target_pos": (1000.0, 0.0, 0.0)}
     )
+    # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-5)
+    dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-7)
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
+    # lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_l2, weight=-2.0)
+    # ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.05)
     # (5) Penalty for large action commands
-    action_l2 = RewTerm(func=mdp.action_l2, weight=-0.01)
+    # action_l2 = RewTerm(func=mdp.action_l2, weight=-0.005)
     # (6) Penalty for energy consumption
     # energy = RewTerm(func=mdp.power_consumption, weight=-0.05, params={"gear_ratio": {".*": 3.0}})
 
