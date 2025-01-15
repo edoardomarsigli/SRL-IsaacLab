@@ -14,7 +14,7 @@ from omni.isaac.lab.utils.assets import ISAAC_NUCLEUS_DIR
 MOONBOT_WHEEL_CFG = ArticulationCfg(
     prim_path="{ENV_REGEX_NS}/Robot",
     spawn=sim_utils.UsdFileCfg(
-        usd_path="C:/Users/marcu/Documents/isaac_ws/IsaacLab/source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/manager_based/classic/moonbot/moonbot_wheel.usd",
+        usd_path="/home/marcusdyhr/isaac_ws/IsaacLab/source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/manager_based/classic/moonbot/moonbot_wheel.usd",
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             rigid_body_enabled=True,
             max_linear_velocity=1000.0,

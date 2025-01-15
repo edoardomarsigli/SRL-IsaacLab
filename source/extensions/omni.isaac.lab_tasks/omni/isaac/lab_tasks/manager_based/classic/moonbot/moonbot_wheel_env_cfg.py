@@ -100,14 +100,14 @@ class EventCfg:
         params={"pose_range": {"yaw": (-3.14,3.14)}, "velocity_range": {}},
     )
 
-    reset_robot_joints = EventTerm(
-        func=mdp.reset_joints_by_offset,
-        mode="reset",
-        params={
-            "position_range": (-0.2, 0.2),
-            "velocity_range": (-0.1, 0.1),
-        },
-    )
+    # reset_robot_joints = EventTerm(
+    #     func=mdp.reset_joints_by_offset,
+    #     mode="reset",
+    #     params={
+    #         "position_range": (-0.2, 0.2),
+    #         "velocity_range": (-0.1, 0.1),
+    #     },
+    # )
 
 
 @configclass
@@ -115,17 +115,17 @@ class RewardsCfg:
     """Reward terms for the MDP."""
 
     # (1) Reward for moving forward
-    progress = RewTerm(func=mdp.progress_reward, weight=1.0, params={"target_pos": (1000.0, 0.0, 0.0)})
+    progress = RewTerm(func=mdp.progress_reward, weight=0.5, params={"target_pos": (1000.0, 0.0, 0.0)})
     # # (3) Reward for non-upright posture
     # upright = RewTerm(func=mdp.upright_posture_bonus, weight=0.1, params={"threshold": 0.93})
     # (4) Reward for moving in the right direction
     move_to_target = RewTerm(
-        func=mdp.move_to_target_bonus, weight=0.5, params={"threshold": 0.8, "target_pos": (1000.0, 0.0, 0.0)}
+        func=mdp.move_to_target_bonus, weight=0.5, params={"threshold": 0.995, "target_pos": (1000.0, 0.0, 0.0)}
     )
     # (5) Penalty for large action commands
-    action_l2 = RewTerm(func=mdp.action_l2, weight=-0.005)
+    action_l2 = RewTerm(func=mdp.action_l2, weight=-0.01)
     # (6) Penalty for energy consumption
-    # energy = RewTerm(func=mdp.power_consumption, weight=-0.05, params={"gear_ratio": {".*": 15.0}})
+    # energy = RewTerm(func=mdp.power_consumption, weight=-0.05, params={"gear_ratio": {".*": 3.0}})
 
 
 
