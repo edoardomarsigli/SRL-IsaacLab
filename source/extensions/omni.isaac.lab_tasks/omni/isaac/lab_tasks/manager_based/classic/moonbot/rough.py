@@ -10,7 +10,7 @@ import omni.isaac.lab.terrains as terrain_gen
 from .terrain_generator_cfg import TerrainGeneratorCfg
 
 ROUGH_TERRAINS_CFG = TerrainGeneratorCfg(
-    size=(8.0, 8.0),
+    size=(10.0, 10.0),
     border_width=20.0,
     num_rows=10,
     num_cols=20,
@@ -18,6 +18,8 @@ ROUGH_TERRAINS_CFG = TerrainGeneratorCfg(
     vertical_scale=0.005,
     slope_threshold=0.75,
     use_cache=False,
+    curriculum=True,
+    difficulty_range=(0.0,1.0),
     sub_terrains={
         # "pyramid_stairs": terrain_gen.MeshPyramidStairsTerrainCfg(
         #     proportion=0.2,
@@ -42,10 +44,10 @@ ROUGH_TERRAINS_CFG = TerrainGeneratorCfg(
             proportion=0.2, noise_range=(0.02, 0.10), noise_step=0.02, border_width=0.25
         ),
         # "hf_pyramid_slope": terrain_gen.HfPyramidSlopedTerrainCfg(
-        #     proportion=0.1, slope_range=(0.0, 0.4), platform_width=2.0, border_width=0.25
+        #     proportion=0.1, slope_range=(0.0, 0.4), platform_width=0.1, border_width=0.25
         # ),
         # "hf_pyramid_slope_inv": terrain_gen.HfInvertedPyramidSlopedTerrainCfg(
-        #     proportion=0.1, slope_range=(0.0, 0.4), platform_width=2.0, border_width=0.25
+        #     proportion=0.1, slope_range=(0.0, 0.4), platform_width=0.1, border_width=0.25
         # ),
     },
 )

@@ -30,39 +30,39 @@ class MySceneCfg(InteractiveSceneCfg):
     """Configuration for the terrain scene with an Moonbot Wheel robot."""
 
     # terrain (flat plane)
-    terrain = TerrainImporterCfg(
-        prim_path="/World/ground",
-        terrain_type="plane",
-        collision_group=-1,
-        physics_material=sim_utils.RigidBodyMaterialCfg(
-            friction_combine_mode="average",
-            restitution_combine_mode="average",
-            static_friction=1.0,
-            dynamic_friction=1.0,
-            restitution=0.0,
-        ),
-        debug_vis=False,
-    )
-    # terrain (rough)
     # terrain = TerrainImporterCfg(
     #     prim_path="/World/ground",
-    #     terrain_type="generator",
-    #     terrain_generator=ROUGH_TERRAINS_CFG,
-    #     max_init_terrain_level=5,
+    #     terrain_type="plane",
     #     collision_group=-1,
     #     physics_material=sim_utils.RigidBodyMaterialCfg(
-    #         friction_combine_mode="multiply",
-    #         restitution_combine_mode="multiply",
+    #         friction_combine_mode="average",
+    #         restitution_combine_mode="average",
     #         static_friction=1.0,
     #         dynamic_friction=1.0,
-    #     ),
-    #     visual_material=sim_utils.MdlFileCfg(
-    #         mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
-    #         project_uvw=True,
-    #         texture_scale=(0.25, 0.25),
+    #         restitution=0.0,
     #     ),
     #     debug_vis=False,
     # )
+    # terrain (rough)
+    terrain = TerrainImporterCfg(
+        prim_path="/World/ground",
+        terrain_type="generator",
+        terrain_generator=ROUGH_TERRAINS_CFG,
+        max_init_terrain_level=5,
+        collision_group=-1,
+        physics_material=sim_utils.RigidBodyMaterialCfg(
+            friction_combine_mode="multiply",
+            restitution_combine_mode="multiply",
+            static_friction=1.0,
+            dynamic_friction=1.0,
+        ),
+        visual_material=sim_utils.MdlFileCfg(
+            mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
+            project_uvw=True,
+            texture_scale=(0.25, 0.25),
+        ),
+        debug_vis=False,
+    )
     # robot
     robot = MOONBOT_WHEEL_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
 
@@ -82,7 +82,7 @@ class MySceneCfg(InteractiveSceneCfg):
 class ActionsCfg:
     """Action specifications for the MDP."""
 
-    joint_effort = mdp.JointVelocityActionCfg(asset_name="robot", joint_names=[".*"], scale=1)
+    joint_effort = mdp.JointVelocityActionCfg(asset_name="robot", joint_names=[".*"], scale=5)
 
 
 @configclass
@@ -138,15 +138,19 @@ class RewardsCfg:
     progress = RewTerm(func=mdp.progress_reward, weight=1.0, params={"target_pos": (1000.0, 0.0, 0.0)})
     # # (3) Reward for non-upright posture
     # upright = RewTerm(func=mdp.upright_posture_bonus, weight=0.1, params={"threshold": 0.93})
-    # (4) Reward for moving in the right direction
-    move_to_target = RewTerm(
-        func=mdp.move_to_target_bonus, weight=0.5, params={"threshold": 0.99, "target_pos": (1000.0, 0.0, 0.0)}
+    # (4) Reward for moving in the right direction (rough grained)
+    move_to_target_rough = RewTerm(
+        func=mdp.move_to_target_bonus, weight=0.5, params={"threshold": 0.8, "target_pos": (1000.0, 0.0, 0.0)}
+    )
+    # (4) Reward for moving in the right direction (fine grained)
+    move_to_target_fine = RewTerm(
+        func=mdp.move_to_target_bonus, weight=0.05, params={"threshold": 0.95, "target_pos": (1000.0, 0.0, 0.0)}
     )
     # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-5)
-    dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-7)
+    dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-6)
     action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
     # lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_l2, weight=-2.0)
-    # ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.05)
+    ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.05)
     # (5) Penalty for large action commands
     # action_l2 = RewTerm(func=mdp.action_l2, weight=-0.005)
     # (6) Penalty for energy consumption
@@ -160,6 +164,9 @@ class TerminationsCfg:
 
     # (1) Terminate if the episode length is exceeded
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
+
+    # (2) Terminate if robot flies off (band aid fix to a deeper problem)
+    root_height = DoneTerm(func=mdp.root_height_above_maximum, params={"maximum_height": 1.5})
 
 
 @configclass
@@ -187,7 +194,7 @@ class MoonbotWheelEnvCfg(ManagerBasedRLEnvCfg):
         """Post initialization."""
         # general settings
         self.decimation = 2
-        self.episode_length_s = 10.0
+        self.episode_length_s = 15.0
         # simulation settings
         self.sim.dt = 1 / 120.0
         self.sim.render_interval = self.decimation
