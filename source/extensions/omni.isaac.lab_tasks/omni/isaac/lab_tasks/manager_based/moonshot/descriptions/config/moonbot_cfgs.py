@@ -6,15 +6,20 @@ import omni.isaac.lab.sim as sim_utils
 from omni.isaac.lab.actuators import ImplicitActuatorCfg
 from omni.isaac.lab.assets import ArticulationCfg
 from omni.isaac.lab.utils.assets import ISAAC_NUCLEUS_DIR
+import omni.isaac.lab_tasks.manager_based.moonshot.utils as moonshot_utils
+
+
+# Get full path, replace is for Windows paths
+ISAAC_LAB_PATH = moonshot_utils.find_isaaclab_path().replace("\\","/") #  
 
 ##
 # Configuration
 ##
 
-MOONBOT_WHEEL_CFG = ArticulationCfg(
+WHEEL_MODULE_CFG = ArticulationCfg(
     prim_path="{ENV_REGEX_NS}/Robot",
     spawn=sim_utils.UsdFileCfg(
-        usd_path="/home/marcusdyhr/isaac_ws/IsaacLab/source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/manager_based/classic/moonbot/moonbot_wheel.usd",
+        usd_path=ISAAC_LAB_PATH + "/source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/manager_based/moonshot/descriptions/usd/wheel_module/wheel_module.usd",
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             rigid_body_enabled=True,
             max_linear_velocity=1000.0,

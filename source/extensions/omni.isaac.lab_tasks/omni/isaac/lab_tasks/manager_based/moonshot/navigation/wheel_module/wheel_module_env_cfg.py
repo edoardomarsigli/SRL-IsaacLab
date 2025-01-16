@@ -17,13 +17,13 @@ from omni.isaac.lab.scene import InteractiveSceneCfg
 from omni.isaac.lab.terrains import TerrainImporterCfg
 from omni.isaac.lab.utils import configclass
 
-import omni.isaac.lab_tasks.manager_based.classic.moonbot.mdp as mdp
+import omni.isaac.lab_tasks.manager_based.moonshot.navigation.mdp as mdp
 from omni.isaac.lab.utils.assets import ISAAC_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR
 ##
 # Pre-defined configs
 ##
-from omni.isaac.lab_assets.moonbot import MOONBOT_WHEEL_CFG  # isort: skip
-from omni.isaac.lab_tasks.manager_based.classic.moonbot.rough import ROUGH_TERRAINS_CFG
+from omni.isaac.lab_tasks.manager_based.moonshot.descriptions.config.moonbot_cfgs import WHEEL_MODULE_CFG  # isort: skip
+from omni.isaac.lab_tasks.manager_based.moonshot.navigation.terrain.rough import ROUGH_TERRAINS_CFG
 
 @configclass
 class MySceneCfg(InteractiveSceneCfg):
@@ -64,7 +64,7 @@ class MySceneCfg(InteractiveSceneCfg):
         debug_vis=False,
     )
     # robot
-    robot = MOONBOT_WHEEL_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
+    robot = WHEEL_MODULE_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
 
     # lights
     light = AssetBaseCfg(
@@ -166,7 +166,7 @@ class TerminationsCfg:
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
 
     # (2) Terminate if robot flies off (band aid fix to a deeper problem)
-    root_height = DoneTerm(func=mdp.root_height_above_maximum, params={"maximum_height": 1.5})
+    # root_height = DoneTerm(func=mdp.root_height_above_maximum, params={"maximum_height": 1.5})
 
 
 @configclass
@@ -177,8 +177,8 @@ class CurriculumCfg:
 
 
 @configclass
-class MoonbotWheelEnvCfg(ManagerBasedRLEnvCfg):
-    """Configuration for Moonbot Wheel environment."""
+class WheelModuleEnvCfg(ManagerBasedRLEnvCfg):
+    """Configuration for Moonshot Wheel Module environment."""
 
     # Scene settings
     scene: MySceneCfg = MySceneCfg(num_envs=4096, env_spacing=2.5)

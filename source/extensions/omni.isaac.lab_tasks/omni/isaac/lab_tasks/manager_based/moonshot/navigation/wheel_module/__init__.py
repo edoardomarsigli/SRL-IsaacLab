@@ -16,12 +16,12 @@ from . import agents
 ##
 
 gym.register(
-    id="Moonbot-Wheel-v0",
+    id="Moonshot-Navigation-WheelModule-v0",
     entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
-        "env_cfg_entry_point": f"{__name__}.moonbot_wheel_env_cfg:MoonbotWheelEnvCfg",
-        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:MoonbotWheelPPORunnerCfg",
+        "env_cfg_entry_point": f"{__name__}.wheel_module_env_cfg:WheelModuleEnvCfg",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:WheelModulePPORunnerCfg",
         "rl_games_cfg_entry_point": f"{agents.__name__}:rl_games_ppo_cfg.yaml",
         "skrl_cfg_entry_point": f"{agents.__name__}:skrl_ppo_cfg.yaml",
         "sb3_cfg_entry_point": f"{agents.__name__}:sb3_ppo_cfg.yaml",

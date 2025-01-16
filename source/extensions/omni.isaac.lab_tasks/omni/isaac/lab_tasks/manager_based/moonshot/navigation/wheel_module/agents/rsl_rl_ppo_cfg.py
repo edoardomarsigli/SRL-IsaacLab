@@ -13,11 +13,11 @@ from omni.isaac.lab_tasks.utils.wrappers.rsl_rl import (
 
 
 @configclass
-class MoonbotWheelPPORunnerCfg(RslRlOnPolicyRunnerCfg):
+class WheelModulePPORunnerCfg(RslRlOnPolicyRunnerCfg):
     num_steps_per_env = 32
     max_iterations = 1000
     save_interval = 50
-    experiment_name = "moonbot-wheel"
+    experiment_name = "wheel_module"
     empirical_normalization = False
     policy = RslRlPpoActorCriticCfg(
         init_noise_std=1.0,
