@@ -39,7 +39,7 @@ params:
   load_path: '' # path to the checkpoint to load
 
   config:
-    name: wheel_module_nav
+    name: wheel_module_vel
     env_name: rlgpu
     device: 'cuda:0'
     device_name: 'cuda:0'

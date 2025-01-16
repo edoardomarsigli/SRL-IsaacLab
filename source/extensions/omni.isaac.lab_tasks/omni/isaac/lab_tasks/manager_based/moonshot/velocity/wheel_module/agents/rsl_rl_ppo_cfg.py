@@ -17,7 +17,7 @@ class WheelModulePPORunnerCfg(RslRlOnPolicyRunnerCfg):
     num_steps_per_env = 32
     max_iterations = 1000
     save_interval = 50
-    experiment_name = "wheel_module_nav"
+    experiment_name = "wheel_module_vel"
     empirical_normalization = False
     policy = RslRlPpoActorCriticCfg(
         init_noise_std=1.0,
