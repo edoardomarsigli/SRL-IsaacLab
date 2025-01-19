@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import math
 import torch
 from typing import TYPE_CHECKING
 
 from omni.isaac.lab.assets import Articulation, RigidObject
 from omni.isaac.lab.managers import SceneEntityCfg
 from omni.isaac.lab.sensors import ContactSensor
+import omni.isaac.lab.utils.math as math_utils
 
 if TYPE_CHECKING:
     from omni.isaac.lab.envs import ManagerBasedRLEnv
@@ -20,3 +22,17 @@ def root_height_above_maximum(
     # extract the used quantities (to enable type-hinting)
     asset: RigidObject = env.scene[asset_cfg.name]
     return asset.data.root_pos_w[:, 2] > maximum_height
+
+def root_roll_above_threshold(
+    env: ManagerBasedRLEnv, threshold: float, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    """Terminate when the asset's roll is above the threshold.
+    """
+    # extract the used quantities (to enable type-hinting)
+    asset: RigidObject = env.scene[asset_cfg.name]
+    quat = asset.data.root_quat_w
+    if quat.ndim == 1:  
+        quat = quat.unsqueeze(0) 
+    roll, _, _ = math_utils.euler_xyz_from_quat(quat)
+
+    return torch.abs(math_utils.wrap_to_pi(roll)) > threshold

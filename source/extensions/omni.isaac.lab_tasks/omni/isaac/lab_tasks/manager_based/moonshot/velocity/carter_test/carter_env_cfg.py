@@ -26,49 +26,49 @@ from omni.isaac.lab.utils.assets import ISAAC_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR
 ##
 # Pre-defined configs
 ##
-from omni.isaac.lab_tasks.manager_based.moonshot.descriptions.config.moonbot_cfgs import WHEEL_MODULE_CFG  # isort: skip
-from omni.isaac.lab_tasks.manager_based.moonshot.velocity.terrain.rough import ROUGH_TERRAINS_CFG
+from omni.isaac.lab_tasks.manager_based.moonshot.descriptions.config.moonbot_cfgs import CARTER_CFG  # isort: skip
+from omni.isaac.lab_tasks.manager_based.moonshot.velocity.terrain.rough import ROUGH_HILLY_TERRAINS_CFG
 
 @configclass
 class MySceneCfg(InteractiveSceneCfg):
-    """Configuration for the terrain scene with an Moonbot Wheel robot."""
+    """Configuration for the terrain scene with a Carter robot."""
 
     # terrain (flat plane)
-    terrain = TerrainImporterCfg(
-        prim_path="/World/ground",
-        terrain_type="plane",
-        collision_group=-1,
-        physics_material=sim_utils.RigidBodyMaterialCfg(
-            friction_combine_mode="average",
-            restitution_combine_mode="average",
-            static_friction=1.0,
-            dynamic_friction=1.0,
-            restitution=0.0,
-        ),
-        debug_vis=False,
-    )
-    # terrain (rough)
     # terrain = TerrainImporterCfg(
     #     prim_path="/World/ground",
-    #     terrain_type="generator",
-    #     terrain_generator=ROUGH_TERRAINS_CFG,
-    #     max_init_terrain_level=5,
+    #     terrain_type="plane",
     #     collision_group=-1,
     #     physics_material=sim_utils.RigidBodyMaterialCfg(
-    #         friction_combine_mode="multiply",
-    #         restitution_combine_mode="multiply",
+    #         friction_combine_mode="average",
+    #         restitution_combine_mode="average",
     #         static_friction=1.0,
     #         dynamic_friction=1.0,
-    #     ),
-    #     visual_material=sim_utils.MdlFileCfg(
-    #         mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
-    #         project_uvw=True,
-    #         texture_scale=(0.25, 0.25),
+    #         restitution=0.0,
     #     ),
     #     debug_vis=False,
     # )
+    # terrain (rough)
+    terrain = TerrainImporterCfg(
+        prim_path="/World/ground",
+        terrain_type="generator",
+        terrain_generator=ROUGH_HILLY_TERRAINS_CFG,
+        max_init_terrain_level=5,
+        collision_group=-1,
+        physics_material=sim_utils.RigidBodyMaterialCfg(
+            friction_combine_mode="multiply",
+            restitution_combine_mode="multiply",
+            static_friction=1.0,
+            dynamic_friction=1.0,
+        ),
+        visual_material=sim_utils.MdlFileCfg(
+            mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
+            project_uvw=True,
+            texture_scale=(0.25, 0.25),
+        ),
+        debug_vis=False,
+    )
     # robot
-    robot = WHEEL_MODULE_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
+    robot = CARTER_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
 
     # lights
     light = AssetBaseCfg(
@@ -86,16 +86,16 @@ class MySceneCfg(InteractiveSceneCfg):
 class CommandsCfg:
     """Command specifications for the MDP."""
 
-    base_velocity = mdp.UniformWorldVelocityCommandCfg(
+    base_velocity = mdp.UniformVelocityCommandCfg(
         asset_name="robot",
-        resampling_time_range=(0.0, 0.0),
+        resampling_time_range=(20, 20),
         rel_standing_envs=0.02,
         rel_heading_envs=1.0,
-        heading_command=True,
+        heading_command=False,
         heading_control_stiffness=0.5,
         debug_vis=True,
-        ranges=mdp.UniformWorldVelocityCommandCfg.Ranges(
-            lin_vel_x=(-1.0, 1.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(0.0, 0.0), heading=(-math.pi, math.pi)
+        ranges=mdp.UniformVelocityCommandCfg.Ranges(
+            lin_vel_x=(-1.0, 1.0), lin_vel_y=(0.0, 0.0), ang_vel_z=(-0.5, 0.5), heading=(-math.pi, math.pi)
         ),
     )
 
@@ -104,7 +104,7 @@ class CommandsCfg:
 class ActionsCfg:
     """Action specifications for the MDP."""
 
-    joint_effort = mdp.JointVelocityActionCfg(asset_name="robot", joint_names=[".*"], scale=5)
+    joint_effort = mdp.JointVelocityActionCfg(asset_name="robot", joint_names=[".*"], scale=5.0)
 
 
 @configclass
@@ -137,7 +137,7 @@ class EventCfg:
     reset_base = EventTerm(
         func=mdp.reset_root_state_uniform,
         mode="reset",
-        params={"pose_range": {"yaw": (-3.14,3.14)}, "velocity_range": {}},
+        params={"pose_range": {"z": (0.15,0.15), "yaw": (-math.pi, math.pi)}, "velocity_range": {}},
     )
 
     reset_robot_joints = EventTerm(
@@ -164,7 +164,7 @@ class RewardsCfg:
     # -- penalties
     dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-7)
     action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
-    ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.05)
+    # ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.05)
 
 
 
@@ -175,6 +175,9 @@ class TerminationsCfg:
     # (1) Terminate if the episode length is exceeded
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
 
+    # (2) Terminate if robot falls over on its side
+    roll_threshold = DoneTerm(func=mdp.root_roll_above_threshold, params = {"threshold": math.pi/2})
+
 @configclass
 class CurriculumCfg:
     """Curriculum terms for the MDP."""
@@ -183,7 +186,7 @@ class CurriculumCfg:
 
 
 @configclass
-class WheelModuleEnvCfg(ManagerBasedRLEnvCfg):
+class CarterEnvCfg(ManagerBasedRLEnvCfg):
     """Configuration for Moonshot Wheel Module environment."""
 
     # Scene settings
@@ -196,6 +199,7 @@ class WheelModuleEnvCfg(ManagerBasedRLEnvCfg):
     rewards: RewardsCfg = RewardsCfg()
     terminations: TerminationsCfg = TerminationsCfg()
     events: EventCfg = EventCfg()
+    curriculum: CurriculumCfg = CurriculumCfg()
 
     def __post_init__(self):
         """Post initialization."""
@@ -207,3 +211,13 @@ class WheelModuleEnvCfg(ManagerBasedRLEnvCfg):
         self.sim.render_interval = self.decimation
         self.sim.disable_contact_processing = True
         self.sim.physics_material = self.scene.terrain.physics_material
+
+
+        # check if terrain levels curriculum is enabled - if so, enable curriculum for terrain generator
+        # this generates terrains with increasing difficulty and is useful for training
+        if getattr(self.curriculum, "terrain_levels", None) is not None:
+            if self.scene.terrain.terrain_generator is not None:
+                self.scene.terrain.terrain_generator.curriculum = True
+        else:
+            if self.scene.terrain.terrain_generator is not None:
+                self.scene.terrain.terrain_generator.curriculum = False

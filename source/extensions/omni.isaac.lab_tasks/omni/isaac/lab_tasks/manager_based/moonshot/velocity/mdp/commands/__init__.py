@@ -6,14 +6,14 @@
 """Various command terms that can be used in the environment."""
 
 from .commands_cfg import (
-    NormalVelocityCommandCfg,
+    # NormalVelocityCommandCfg,
     NullCommandCfg,
     TerrainBasedPose2dCommandCfg,
     UniformPose2dCommandCfg,
     UniformPoseCommandCfg,
-    UniformVelocityCommandWheelCfg,
+    UniformWorldVelocityCommandCfg,
 )
 from .null_command import NullCommand
 from .pose_2d_command import TerrainBasedPose2dCommand, UniformPose2dCommand
 from .pose_command import UniformPoseCommand
-from .velocity_command import NormalVelocityCommand, UniformVelocityCommandWheel
+from .velocity_command import UniformWorldVelocityCommand

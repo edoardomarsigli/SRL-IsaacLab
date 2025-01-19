@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 import omni.isaac.lab.utils.math as math_utils
 import omni.isaac.lab.utils.string as string_utils
-from omni.isaac.lab.assets import Articulation
+from omni.isaac.lab.assets import Articulation, RigidObject
 from omni.isaac.lab.managers import ManagerTermBase, RewardTermCfg, SceneEntityCfg
 
 from . import observations as obs
@@ -149,3 +149,113 @@ def heading_command_error_abs(env: ManagerBasedRLEnv, command_name: str) -> torc
     command = env.command_manager.get_command(command_name)
     heading_b = command[:, 3]
     return heading_b.abs()
+
+def move_to_target_bonus_command(
+    env: ManagerBasedRLEnv,
+    threshold: float,
+    command_name: str,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Reward for moving to the target heading."""
+    command = env.command_manager.get_command(command_name)
+    des_pos_b = command[:, :3]
+    heading_proj = obs.base_heading_proj(env, des_pos_b, asset_cfg).squeeze(-1)
+    return torch.where(heading_proj > threshold, 1.0, heading_proj / threshold)
+
+class progress_reward_command(ManagerTermBase):
+    """Reward for making progress towards the target."""
+
+    def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
+        # initialize the base class
+        super().__init__(cfg, env)
+        # create history buffer
+        self.potentials = torch.zeros(env.num_envs, device=env.device)
+        self.prev_potentials = torch.zeros_like(self.potentials)
+
+    def reset(self, env_ids: torch.Tensor):
+        # extract the used quantities (to enable type-hinting)
+        asset: Articulation = self._env.scene["robot"]
+        # compute projection of current heading to desired heading vector
+        command_name = self.cfg.params["command_name"]
+        command = self._env.command_manager.get_command(command_name)
+        target_pos = torch.tensor(command[:, :3], device = self.device)
+        to_target_pos = target_pos[env_ids, :3] - asset.data.root_pos_w[env_ids, :3]
+        # reward terms
+        self.potentials[env_ids] = -torch.norm(to_target_pos, p=2, dim=-1) / self._env.step_dt
+        self.prev_potentials[env_ids] = self.potentials[env_ids]
+
+    def __call__(
+        self,
+        env: ManagerBasedRLEnv,
+        command_name: str,
+        asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    ) -> torch.Tensor:
+        # extract the used quantities (to enable type-hinting)
+        asset: Articulation = env.scene[asset_cfg.name]
+        # compute vector to target
+        command_name = self.cfg.params["command_name"]
+        command = self._env.command_manager.get_command(command_name)
+        target_pos = torch.tensor(command[:, :3], device = self.device)
+        to_target_pos = target_pos[:, :3] - asset.data.root_pos_w[:, :3]
+        to_target_pos[:, 2] = 0.0
+        # update history buffer and compute new potential
+        self.prev_potentials[:] = self.potentials[:]
+        self.potentials[:] = -torch.norm(to_target_pos, p=2, dim=-1) / env.step_dt
+
+        return self.potentials - self.prev_potentials
+
+class progress_reward(ManagerTermBase):
+    """Reward for making progress towards the target."""
+
+    def __init__(self, env: ManagerBasedRLEnv, cfg: RewardTermCfg):
+        # initialize the base class
+        super().__init__(cfg, env)
+        # create history buffer
+        self.potentials = torch.zeros(env.num_envs, device=env.device)
+        self.prev_potentials = torch.zeros_like(self.potentials)
+
+    def reset(self, env_ids: torch.Tensor):
+        # extract the used quantities (to enable type-hinting)
+        asset: Articulation = self._env.scene["robot"]
+        # compute projection of current heading to desired heading vector
+        target_pos = torch.tensor(self.cfg.params["target_pos"], device=self.device)
+        to_target_pos = target_pos - asset.data.root_pos_w[env_ids, :3]
+        # reward terms
+        self.potentials[env_ids] = -torch.norm(to_target_pos, p=2, dim=-1) / self._env.step_dt
+        self.prev_potentials[env_ids] = self.potentials[env_ids]
+
+    def __call__(
+        self,
+        env: ManagerBasedRLEnv,
+        target_pos: tuple[float, float, float],
+        asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    ) -> torch.Tensor:
+        # extract the used quantities (to enable type-hinting)
+        asset: Articulation = env.scene[asset_cfg.name]
+        # compute vector to target
+        target_pos = torch.tensor(target_pos, device=env.device)
+        to_target_pos = target_pos - asset.data.root_pos_w[:, :3]
+        to_target_pos[:, 2] = 0.0
+        # update history buffer and compute new potential
+        self.prev_potentials[:] = self.potentials[:]
+        self.potentials[:] = -torch.norm(to_target_pos, p=2, dim=-1) / env.step_dt
+
+        return self.potentials - self.prev_potentials
+    
+
+def lin_ang_vel_xy_l2(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """Penalize xy-axis base linear/angular velocity product using L2 squared kernel."""
+    # extract the used quantities (to enable type-hinting)
+    asset: RigidObject = env.scene[asset_cfg.name]
+    return torch.sum(torch.square(asset.data.root_ang_vel_b[:, :2] * asset.data.root_lin_vel_b[:, :2]), dim=1)
+
+
+def get_to_goal_reward(env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """WORK IN PROGRESS"""
+    command = env.command_manager.get_command(command_name)
+    asset: RigidObject = env.scene[asset_cfg.name]
+    goal = command[:, :2]
+    if torch.abs(goal - asset.data.root_pose_w[:, :2]) > 0.05:
+        return 1
+    else:
+        return 0
