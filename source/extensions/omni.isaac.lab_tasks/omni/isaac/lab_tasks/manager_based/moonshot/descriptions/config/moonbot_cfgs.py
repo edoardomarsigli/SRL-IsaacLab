@@ -19,7 +19,7 @@ ISAAC_LAB_PATH = moonshot_utils.find_isaaclab_path().replace("\\","/") #
 WHEEL_MODULE_CFG = ArticulationCfg(
     prim_path="{ENV_REGEX_NS}/Robot",
     spawn=sim_utils.UsdFileCfg(
-        usd_path=ISAAC_LAB_PATH + "/source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/manager_based/moonshot/descriptions/usd/wheel_module/wheel_module.usd",
+        usd_path=ISAAC_LAB_PATH + "/source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/manager_based/moonshot/descriptions/usd/hero_wheel_module.usd",
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             rigid_body_enabled=True,
             max_linear_velocity=1000.0,
@@ -37,20 +37,20 @@ WHEEL_MODULE_CFG = ArticulationCfg(
         ),
     ),
     init_state=ArticulationCfg.InitialStateCfg(
-    pos=(0.0, 0.0, 0.50), 
-    joint_pos={"leg3_wheel_left_joint": 0.0,
-               "leg3_wheel_right_joint": 0.0},
+    pos=(0.0, 0.0, 0.30), 
+    joint_pos={"wm1_wheel_left_joint": 0.0,
+               "wm1_wheel_right_joint": 0.0},
     ),
     actuators = {
-        "leg3_wheel_left__actuator": ImplicitActuatorCfg(
-            joint_names_expr=["leg3_wheel_left_joint"],
+        "wm1_wheel_left_actuator": ImplicitActuatorCfg(
+            joint_names_expr=["wm1_wheel_left_joint"],
             effort_limit=400.0,
             velocity_limit=100.0,
             stiffness=0.0,
             damping=10.0,
         ),
-        "leg3_wheel_right_actuator": ImplicitActuatorCfg(
-            joint_names_expr=["leg3_wheel_right_joint"],
+        "wm1_wheel_right_actuator": ImplicitActuatorCfg(
+            joint_names_expr=["wm1_wheel_right_joint"],
             effort_limit=400.0,
             velocity_limit=100.0,
             stiffness=0.0,
@@ -62,7 +62,7 @@ WHEEL_MODULE_CFG = ArticulationCfg(
 CARTER_CFG = ArticulationCfg(
     prim_path="{ENV_REGEX_NS}/Robot",
     spawn=sim_utils.UsdFileCfg(
-        usd_path=ISAAC_LAB_PATH + "/source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/manager_based/moonshot/descriptions/usd/carter_example/carter.usd",
+        usd_path=ISAAC_LAB_PATH + "/source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/manager_based/moonshot/descriptions/usd/carter.usd",
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             rigid_body_enabled=True,
             max_linear_velocity=1000.0,
@@ -85,7 +85,7 @@ CARTER_CFG = ArticulationCfg(
                "right_wheel": 0.0},
     ),
     actuators = {
-        "leg3_wheel_left__actuator": ImplicitActuatorCfg(
+        "leg3_wheel_left_actuator": ImplicitActuatorCfg(
             joint_names_expr=["left_wheel"],
             effort_limit=400.0,
             velocity_limit=100.0,

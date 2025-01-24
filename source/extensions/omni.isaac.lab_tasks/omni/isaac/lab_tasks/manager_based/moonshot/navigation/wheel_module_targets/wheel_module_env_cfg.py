@@ -154,26 +154,26 @@ class RewardsCfg:
     # progress = RewTerm(func=mdp.progress_reward_command, weight=1.0, params={"command_name": "pose_command"})
     position_tracking = RewTerm(
         func=mdp.position_command_error_tanh,
-        weight=1.5, 
-        params={"std": 4.0, "command_name": "pose_command"},
+        weight=1.0, 
+        params={"std": 2.0, "command_name": "pose_command"},
     )
     position_tracking_fine_grained = RewTerm(
         func=mdp.position_command_error_tanh,
-        weight=0.2,
+        weight=1.0,
         params={"std": 0.2, "command_name": "pose_command"},
     )
     orientation_tracking = RewTerm(
         func=mdp.heading_command_error_abs,
-        weight=-0.2,
+        weight=-0.1,
         params={"command_name": "pose_command"},
     )
     
     # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-5)
-    # dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-7)
+    dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-7)
     # action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
     # lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_l2, weight=-2.0)
     # ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.01)
-    lin_ang_vel_xy_l2 = RewTerm(func=mdp.lin_ang_vel_xy_l2, weight=-0.2)
+    # lin_ang_vel_xy_l2 = RewTerm(func=mdp.lin_ang_vel_xy_l2, weight=-0.2)
     # (5) Penalty for large action commands
     # action_l2 = RewTerm(func=mdp.action_l2, weight=-0.005)
     # (6) Penalty for energy consumption

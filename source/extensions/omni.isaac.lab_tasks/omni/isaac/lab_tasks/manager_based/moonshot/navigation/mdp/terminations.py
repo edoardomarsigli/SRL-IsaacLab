@@ -37,7 +37,7 @@ def root_roll_above_threshold(
     return torch.abs(math_utils.wrap_to_pi(roll)) > threshold
 
 def get_to_goal(env: ManagerBasedRLEnv, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
-    """Penalize tracking orientation error."""
+    """Terminate when goal has been reached."""
     command = env.command_manager.get_command(command_name)
     asset: RigidObject = env.scene[asset_cfg.name]
     goal = command[:, :2]

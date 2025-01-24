@@ -24,6 +24,30 @@ if TYPE_CHECKING:
     from .commands_cfg import UniformWorldVelocityCommandCfg
 
 
+class LowPassFilter:
+    def __init__(self, alpha: float):
+        """
+        Initialize the low-pass filter.
+        Args:
+            alpha: Smoothing factor (0 < alpha <= 1). Smaller alpha gives more smoothing.
+        """
+        self.alpha = alpha
+        self.prev_value = None
+
+    def apply(self, value):
+        """
+        Apply the low-pass filter.
+        Args:
+            value: The current value to filter.
+        Returns:
+            The filtered value.
+        """
+        if self.prev_value is None:
+            self.prev_value = value
+        else:
+            self.prev_value = self.alpha * value + (1 - self.alpha) * self.prev_value
+        return self.prev_value
+
 def rotate_vector(vector: torch.Tensor, heading: torch.Tensor) -> torch.Tensor:
     """
     Rotates a vector in the robot's base frame to the world frame.
@@ -44,6 +68,7 @@ def rotate_vector(vector: torch.Tensor, heading: torch.Tensor) -> torch.Tensor:
     )  # Shape: (N, 2, 2)
 
     return torch.bmm(rotation_matrix, vector.unsqueeze(-1)).squeeze(-1)
+
 
 
 class UniformWorldVelocityCommand(CommandTerm):
@@ -105,6 +130,8 @@ class UniformWorldVelocityCommand(CommandTerm):
         # -- metrics
         self.metrics["error_vel_xy"] = torch.zeros(self.num_envs, device=self.device)
         self.metrics["error_vel_yaw"] = torch.zeros(self.num_envs, device=self.device)
+        self.lin_vel_filter = LowPassFilter(alpha=1E-7)
+        self.ang_vel_filter = LowPassFilter(alpha=1E-7)
 
     def __str__(self) -> str:
         """Return a string representation of the command generator."""
@@ -135,12 +162,10 @@ class UniformWorldVelocityCommand(CommandTerm):
         max_command_time = self.cfg.resampling_time_range[1]
         max_command_step = max_command_time / self._env.step_dt
         # logs data
-        self.metrics["error_vel_xy"] += (
-            torch.norm(self.vel_command_b[:, :2] - self.robot.data.root_lin_vel_w[:, :2], dim=-1) / max_command_step
-        )
-        self.metrics["error_vel_yaw"] += (
-            torch.abs(self.vel_command_b[:, 2] - self.robot.data.root_ang_vel_w[:, 2]) / max_command_step
-        )
+        filtered_lin_vel = self.lin_vel_filter.apply(self.robot.data.root_lin_vel_b[:, :2])
+        filtered_ang_vel = self.ang_vel_filter.apply(self.robot.data.root_ang_vel_b[:, 2])
+        self.metrics["error_vel_xy"] += torch.norm(self.vel_command_b[:, :2] - filtered_lin_vel, dim=-1) / max_command_step
+        self.metrics["error_vel_yaw"] += torch.abs(self.vel_command_b[:, 2] - filtered_ang_vel) / max_command_step
 
     def _resample_command(self, env_ids: Sequence[int]):
         # sample velocity commands
@@ -200,18 +225,23 @@ class UniformWorldVelocityCommand(CommandTerm):
                 self.current_vel_visualizer.set_visibility(False)
 
     def _debug_vis_callback(self, event):
-        # check if robot is initialized
-        # note: this is needed in-case the robot is de-initialized. we can't access the data
+        # Check if robot is initialized
         if not self.robot.is_initialized:
             return
-        # get marker location
+
+        # Get marker location
         # -- base state
         base_pos_w = self.robot.data.root_pos_w.clone()
         base_pos_w[:, 2] += 0.5
-        # -- resolve the scales and quaternions
+
+        # Apply low-pass filter to linear velocity (optional: also filter desired velocities if needed)
+        filtered_lin_vel_b = self.lin_vel_filter.apply(self.robot.data.root_lin_vel_b[:, :2])
+
+        # Resolve the scales and quaternions
         vel_des_arrow_scale, vel_des_arrow_quat = self._resolve_xy_velocity_to_arrow(self.command[:, :2])
-        vel_arrow_scale, vel_arrow_quat = self._resolve_xy_velocity_to_arrow(self.robot.data.root_lin_vel_b[:, :2])
-        # display markers
+        vel_arrow_scale, vel_arrow_quat = self._resolve_xy_velocity_to_arrow(filtered_lin_vel_b)
+
+        # Display markers
         self.goal_vel_visualizer.visualize(base_pos_w, vel_des_arrow_quat, vel_des_arrow_scale)
         self.current_vel_visualizer.visualize(base_pos_w, vel_arrow_quat, vel_arrow_scale)
 
