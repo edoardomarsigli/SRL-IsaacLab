@@ -37,7 +37,7 @@ WHEEL_MODULE_CFG = ArticulationCfg(
         ),
     ),
     init_state=ArticulationCfg.InitialStateCfg(
-    pos=(0.0, 0.0, 0.30), 
+    pos=(0.0, 0.0, 0.30),
     joint_pos={"wm1_wheel_left_joint": 0.0,
                "wm1_wheel_right_joint": 0.0},
     ),
@@ -62,7 +62,8 @@ WHEEL_MODULE_CFG = ArticulationCfg(
 VEHICLE_CFG = ArticulationCfg(
     prim_path="{ENV_REGEX_NS}/Robot",
     spawn=sim_utils.UsdFileCfg(
-        usd_path=ISAAC_LAB_PATH + "/source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/manager_based/moonshot/descriptions/usd/hero_vehicle.usd",
+        usd_path=ISAAC_LAB_PATH + "/source/extensions/omni.isaac.lab_tasks/omni/isaac/lab_tasks/manager_based/moonshot/descriptions/usd/hero_vehicle/hero_vehicle.usd",
+        activate_contact_sensors=True,
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             rigid_body_enabled=True,
             max_linear_velocity=1000.0,
@@ -80,82 +81,55 @@ VEHICLE_CFG = ArticulationCfg(
         ),
     ),
     init_state=ArticulationCfg.InitialStateCfg(
-    pos=(0.0, 0.0, 0.30), 
+    pos=(0.0, 0.0, 0.30),
+    # rot=(0.92388,0,-0.38268,0), # disable if EventTerm: reset_joints_by_offset_vehicle is enabled
     joint_pos={".*": 0.0},
     ),
     actuators = {
-        "Leg1_joint1": ImplicitActuatorCfg(
-            joint_names_expr=["Leg1_joint1"],
+        "leg1_joints": ImplicitActuatorCfg(
+            joint_names_expr=["leg1joint[1-7]"],
+            effort_limit=100.0,
+            velocity_limit=50.0,
+            stiffness=10000,
+            damping=100,
+        ),
+        # "wheel_joints": ImplicitActuatorCfg(
+        #     joint_names_expr=[".*_joint"],
+        #     effort_limit=400,
+        #     velocity_limit=100,
+        #     stiffness=0,
+        #     damping=10
+        # ),
+        # "gripper_joints": ImplicitActuatorCfg(
+        #     joint_names_expr=["leg1gripper.*"],
+        #     effort_limit=400,
+        #     velocity_limit=100,
+        #     stiffness=0,
+        #     damping=10
+        # ),
+        "wheel11_left_joint": ImplicitActuatorCfg(
+            joint_names_expr=["wheel11_left_joint"],
             effort_limit=400.0,
             velocity_limit=100.0,
             stiffness=0.0,
             damping=10.0,
         ),
-        "Leg1_joint2": ImplicitActuatorCfg(
-            joint_names_expr=["Leg1_joint2"],
+        "wheel11_right_joint": ImplicitActuatorCfg(
+            joint_names_expr=["wheel11_right_joint"],
             effort_limit=400.0,
             velocity_limit=100.0,
             stiffness=0.0,
             damping=10.0,
         ),
-        "Leg1_joint3": ImplicitActuatorCfg(
-            joint_names_expr=["Leg1_joint3"],
+        "wheel12_left_joint": ImplicitActuatorCfg(
+            joint_names_expr=["wheel12_left_joint"],
             effort_limit=400.0,
             velocity_limit=100.0,
             stiffness=0.0,
             damping=10.0,
         ),
-        "Leg1_joint4": ImplicitActuatorCfg(
-            joint_names_expr=["Leg1_joint4"],
-            effort_limit=400.0,
-            velocity_limit=100.0,
-            stiffness=0.0,
-            damping=10.0,
-        ),
-        "Leg1_joint5": ImplicitActuatorCfg(
-            joint_names_expr=["Leg1_joint5"],
-            effort_limit=400.0,
-            velocity_limit=100.0,
-            stiffness=0.0,
-            damping=10.0,
-        ),
-        "Leg1_joint6": ImplicitActuatorCfg(
-            joint_names_expr=["Leg1_joint6"],
-            effort_limit=400.0,
-            velocity_limit=100.0,
-            stiffness=0.0,
-            damping=10.0,
-        ),
-        "Leg1_joint7": ImplicitActuatorCfg(
-            joint_names_expr=["Leg1_joint7"],
-            effort_limit=400.0,
-            velocity_limit=100.0,
-            stiffness=0.0,
-            damping=10.0,
-        ),
-        "Wheel1_joint1": ImplicitActuatorCfg(
-            joint_names_expr=["Wheel1_joint1"],
-            effort_limit=400.0,
-            velocity_limit=100.0,
-            stiffness=0.0,
-            damping=10.0,
-        ),
-        "Wheel1_joint2": ImplicitActuatorCfg(
-            joint_names_expr=["Wheel1_joint2"],
-            effort_limit=400.0,
-            velocity_limit=100.0,
-            stiffness=0.0,
-            damping=10.0,
-        ),
-        "Wheel2_joint1": ImplicitActuatorCfg(
-            joint_names_expr=["Wheel2_joint1"],
-            effort_limit=400.0,
-            velocity_limit=100.0,
-            stiffness=0.0,
-            damping=10.0,
-        ),
-        "Wheel2_joint2": ImplicitActuatorCfg(
-            joint_names_expr=["Wheel2_joint2"],
+        "wheel12_right_joint": ImplicitActuatorCfg(
+            joint_names_expr=["wheel12_right_joint"],
             effort_limit=400.0,
             velocity_limit=100.0,
             stiffness=0.0,

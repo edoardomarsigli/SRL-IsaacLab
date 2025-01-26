@@ -146,6 +146,11 @@ class RewardsCfg:
     move_to_target_fine = RewTerm(
         func=mdp.move_to_target_bonus, weight=0.05, params={"threshold": 0.95, "target_pos": (1000.0, 0.0, 0.0)}
     )
+    undesired_contacts = RewTerm(
+        func=mdp.undesired_contacts,
+        weight=-1.0,
+        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names="Leg1.*"), "threshold": 0.1},
+    )
     # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-5)
     dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-6)
     action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)

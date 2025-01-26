@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import torch
+import math
 from typing import TYPE_CHECKING
 
 import omni.isaac.lab.utils.math as math_utils
@@ -259,3 +260,37 @@ def get_to_goal_reward(env: ManagerBasedRLEnv, command_name: str, asset_cfg: Sce
         return 1
     else:
         return 0
+    
+def joint_deviation_leg_l1(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """Penalize joint positions that deviate from the default one."""
+    # extract the used quantities (to enable type-hinting)
+    asset: Articulation = env.scene[asset_cfg.name]
+    # do not include the grippers revolute joints
+    joint_names = [f"leg1joint{i}" for i in range(2, 7)] 
+    leg_joint_idx = [asset.find_joints(name)[0][0] for name in joint_names]
+    
+    angle = asset.data.joint_pos[:, asset_cfg.joint_ids][:,leg_joint_idx] - asset.data.default_joint_pos[:, asset_cfg.joint_ids][:,leg_joint_idx]
+    return torch.sum(torch.abs(angle), dim=1)
+
+
+def joint_deviation_vehicle_l1(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """Penalize joint positions that deviate from the default one."""
+    # extract the used quantities (to enable type-hinting)
+    asset: Articulation = env.scene[asset_cfg.name]
+    # do not include the grippers revolute joints
+    joint_names = [f"leg1joint{i}" for i in range(2, 7)] 
+    leg_joint_idx = [asset.find_joints(name)[0][0] for name in joint_names]
+    vehicle_cfg_angles = asset.data.default_joint_pos[:, asset_cfg.joint_ids]
+    
+    vehicle_cfg_angles[:, leg_joint_idx[0]] = 0
+    vehicle_cfg_angles[:, leg_joint_idx[1]] = 0
+    vehicle_cfg_angles[:, leg_joint_idx[2]] = -math.pi/2
+    vehicle_cfg_angles[:, leg_joint_idx[3]] = 0
+    vehicle_cfg_angles[:, leg_joint_idx[4]] = 0
+    
+    # angle = asset.data.joint_pos[:, asset_cfg.joint_ids][:,leg_joint_idx] - vehicle_cfg_angles[:,leg_joint_idx]
+    
+    leg_joint_idx4 = asset.find_joints("leg1joint4")[0]
+    
+    angle = asset.data.joint_pos[:, leg_joint_idx4] - vehicle_cfg_angles[:, leg_joint_idx4]
+    return torch.sum(torch.abs(angle), dim=1)

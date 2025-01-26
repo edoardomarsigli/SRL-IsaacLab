@@ -15,7 +15,7 @@ def find_isaaclab_path(start_path: str = __file__) -> str:
     """
     current_path = os.path.abspath(start_path)
     while current_path != os.path.dirname(current_path):  # Stop when reaching the root directory
-        if os.path.basename(current_path) == "IsaacLab":
+        if os.path.basename(current_path) == "IsaacLab" or os.path.basename(current_path) == "SRL-IsaacLab":
             return current_path
         current_path = os.path.dirname(current_path)
     
