@@ -53,3 +53,46 @@ def terrain_levels_vel(
     terrain.update_env_origins(env_ids, move_up, move_down)
     # return the mean terrain level
     return torch.mean(terrain.terrain_levels.float())
+
+def scale_reward_weight_episodal(env: ManagerBasedRLEnv, env_ids: Sequence[int], term_name: str, init_weight: float, final_weight: float):
+    """Curriculum that modifies a reward weight linearly between two weights as episode progresses.
+
+    Args:
+        env: The learning environment.
+        env_ids: Not used since all environments are affected.
+        term_name: The name of the reward term.
+        init_weight: The weight of the reward term to begin with.
+        final_weight: The weight of the reward at the end of the episode
+    """
+    # determine episode progress
+    # maximum_steps = env.step_dt * env.max_episode_length_s 
+    progress = env.common_step_counter/env.max_episode_length 
+    
+    scaled_reward_weight = (1 - progress) * init_weight + progress * final_weight
+    
+    term_cfg = env.reward_manager.get_term_cfg(term_name)
+    # update term settings
+    term_cfg.weight = scaled_reward_weight
+    env.reward_manager.set_term_cfg(term_name, term_cfg)
+
+def scale_reward_weight_iteration(env: ManagerBasedRLEnv, env_ids: Sequence[int], term_name: str, init_weight: float, final_weight: float):
+    """Curriculum that modifies a reward weight linearly between two weights as episode progresses.
+
+    Args:
+        env: The learning environment.
+        env_ids: Not used since all environments are affected.
+        term_name: The name of the reward term.
+        init_weight: The weight of the reward term to begin with.
+        final_weight: The weight of the reward at the end of the episode
+    """
+    # determine iteration progress
+    env.scene.cfg.
+    maximum_steps = env.step_dt * env.max_episode_length_s 
+    progress = env.common_step_counter/maximum_steps 
+    
+    scaled_reward_weight = (1 - progress) * init_weight + progress * final_weight
+    
+    term_cfg = env.reward_manager.get_term_cfg(term_name)
+    # update term settings
+    term_cfg.weight = scaled_reward_weight
+    env.reward_manager.set_term_cfg(term_name, term_cfg)

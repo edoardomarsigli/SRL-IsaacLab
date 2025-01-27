@@ -16,6 +16,12 @@ ISAAC_LAB_PATH = moonshot_utils.find_isaaclab_path().replace("\\","/") #
 # Configuration
 ##
 
+'''
+Unit notes: 
+Joint velocity limits are in rad/s (revolute), m/s (prismatic)
+Joint effort limits are in N*m (revolute), N (prismatic)
+
+'''
 WHEEL_MODULE_CFG = ArticulationCfg(
     prim_path="{ENV_REGEX_NS}/Robot",
     spawn=sim_utils.UsdFileCfg(
@@ -88,10 +94,10 @@ VEHICLE_CFG = ArticulationCfg(
     actuators = {
         "leg1_joints": ImplicitActuatorCfg(
             joint_names_expr=["leg1joint[1-7]"],
-            effort_limit=100.0,
+            effort_limit=1000.0,
             velocity_limit=50.0,
             stiffness=10000,
-            damping=100,
+            damping=1000,
         ),
         # "wheel_joints": ImplicitActuatorCfg(
         #     joint_names_expr=[".*_joint"],
@@ -110,28 +116,28 @@ VEHICLE_CFG = ArticulationCfg(
         "wheel11_left_joint": ImplicitActuatorCfg(
             joint_names_expr=["wheel11_left_joint"],
             effort_limit=400.0,
-            velocity_limit=100.0,
+            velocity_limit=30.0,
             stiffness=0.0,
             damping=10.0,
         ),
         "wheel11_right_joint": ImplicitActuatorCfg(
             joint_names_expr=["wheel11_right_joint"],
             effort_limit=400.0,
-            velocity_limit=100.0,
+            velocity_limit=30.0,
             stiffness=0.0,
             damping=10.0,
         ),
         "wheel12_left_joint": ImplicitActuatorCfg(
             joint_names_expr=["wheel12_left_joint"],
             effort_limit=400.0,
-            velocity_limit=100.0,
+            velocity_limit=30.0,
             stiffness=0.0,
             damping=10.0,
         ),
         "wheel12_right_joint": ImplicitActuatorCfg(
             joint_names_expr=["wheel12_right_joint"],
             effort_limit=400.0,
-            velocity_limit=100.0,
+            velocity_limit=30.0,
             stiffness=0.0,
             damping=10.0,
         ),

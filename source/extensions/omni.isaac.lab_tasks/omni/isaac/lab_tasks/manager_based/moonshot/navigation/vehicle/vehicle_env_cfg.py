@@ -161,31 +161,38 @@ class RewardsCfg:
     """Reward terms for the MDP."""
 
     # (1) Reward for moving forward
-    progress = RewTerm(func=mdp.progress_reward, weight=1.0, params={"target_pos": (1000.0, 0.0, 0.0)})
-    # (4) Reward for moving in the right direction (rough grained)
+    progress = RewTerm(func=mdp.progress_reward, weight=1.5, params={"target_pos": (1000.0, 0.0, 0.0)})
+    # (2) Reward for moving in the right direction (rough grained)
     # move_to_target_rough = RewTerm(
     #     func=mdp.move_to_target_bonus, weight=1, params={"threshold": 0.8, "target_pos": (1000.0, 0.0, 0.0)}
     # )
-    # (4) Reward for moving in the right direction (fine grained)
+    # (3) Reward for moving in the right direction (fine grained)
     move_to_target_fine = RewTerm(
-        func=mdp.move_to_target_bonus, weight=0.05, params={"threshold": 0.95, "target_pos": (1000.0, 0.0, 0.0)}
+        func=mdp.move_to_target_bonus, weight=10.0, params={"threshold": 0.999, "target_pos": (1000.0, 0.0, 0.0)}
     )
-    desired_contacts_left = RewTerm(
-        func=mdp.undesired_contacts,
-        weight=1.0,
-        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_left"), "threshold": 0.05},
-    )
-    desired_contacts_right = RewTerm(
-        func=mdp.undesired_contacts,
-        weight=1.0,
-        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_right"), "threshold": 0.05},
-    )
+    # (4) Reward for wheels having contact with ground 
+    # desired_contacts_left = RewTerm(
+    #     func=mdp.undesired_contacts,
+    #     weight=1.0,
+    #     params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_left"), "threshold": 0.5},
+    # )
+    # desired_contacts_right = RewTerm(
+    #     func=mdp.undesired_contacts,
+    #     weight=1.0,
+    #     params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_right"), "threshold": 0.5},
+    # )
 
     # -- penalties
-    dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-7)
+    # Penalty for acceleration of joints
+    # dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-7)
+    # Penalty for not being in vehicle configuration 
     joint_deviation = RewTerm(func=mdp.joint_deviation_vehicle_l1, weight = -2.0)
+    # Penalty for wheel velocities being different
+    wheel_vel_deviation_front = RewTerm(func=mdp.wheel_vel_deviation_front, weight = -1e-4)
+    wheel_vel_deviation_rear = RewTerm(func=mdp.wheel_vel_deviation_rear, weight = -1e-4)
+    # Penalty for power consumption
     energy = RewTerm(func=mdp.power_consumption, weight=-0.05, params={"gear_ratio": {".*": 1.0}})
-
+    # Penalty for arm links to collide with anything
     undesired_contacts = RewTerm(
         func=mdp.undesired_contacts,
         weight=-4.0,
@@ -209,7 +216,13 @@ class CurriculumCfg:
     """Curriculum terms for the MDP."""
 
     # terrain_levels = CurrTerm(func=mdp.terrain_levels_vel)
+    action_rate = CurrTerm(
+        func=mdp.modify_reward_weight, params={"term_name": "energy", "weight": -0.01, "num_steps": 1000}
+    )
 
+    # joint_vel = CurrTerm(
+    #     func=mdp.modify_reward_weight, params={"term_name": "joint_deviation", "weight": -0.5, "num_steps": 1000}
+    # )
 
 @configclass
 class VehicleEnvCfg(ManagerBasedRLEnvCfg):
