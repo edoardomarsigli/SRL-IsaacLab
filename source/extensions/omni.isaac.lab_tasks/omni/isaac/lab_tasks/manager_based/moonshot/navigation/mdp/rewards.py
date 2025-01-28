@@ -278,15 +278,15 @@ def joint_deviation_vehicle_l1(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg
     # extract the used quantities (to enable type-hinting)
     asset: Articulation = env.scene[asset_cfg.name]
     # do not include the grippers revolute joints
-    joint_names = [f"leg1joint{i}" for i in range(2,7)] 
+    joint_names = [f"leg1joint{i}" for i in [2,4,6]] 
     leg_joint_idx = [asset.find_joints(name)[0][0] for name in joint_names]
     vehicle_cfg_angles = asset.data.default_joint_pos[:, asset_cfg.joint_ids]
     
     vehicle_cfg_angles[:, leg_joint_idx[0]] = 0
-    vehicle_cfg_angles[:, leg_joint_idx[1]] = 0
-    vehicle_cfg_angles[:, leg_joint_idx[2]] = -math.pi/2
-    vehicle_cfg_angles[:, leg_joint_idx[3]] = 0
-    vehicle_cfg_angles[:, leg_joint_idx[4]] = 0
+    vehicle_cfg_angles[:, leg_joint_idx[1]] = -math.pi/2
+    vehicle_cfg_angles[:, leg_joint_idx[2]] = 0
+    # vehicle_cfg_angles[:, leg_joint_idx[3]] = 0
+    # vehicle_cfg_angles[:, leg_joint_idx[4]] = 0
     
     angle = asset.data.joint_pos[:, asset_cfg.joint_ids][:,leg_joint_idx] - vehicle_cfg_angles[:,leg_joint_idx]
     
@@ -372,3 +372,17 @@ def wheel_vel_deviation_rear(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg =
 #     total_wheel_vel_sse = front_wheel_vel_sse + rear_wheel_vel_sse
     
 #     return total_wheel_vel_sse
+
+def wheel_vel_reward(env: ManagerBasedRLEnv, target_vel: float, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """Reward wheel velocities close to target vel."""
+    # extract the used quantities (to enable type-hinting)
+    asset: Articulation = env.scene[asset_cfg.name]
+    
+    wheel_joint_names = ["wheel11_left_joint","wheel11_right_joint", "wheel12_left_joint","wheel12_right_joint"] 
+    wheel_joint_idx =  [asset.find_joints(name)[0][0] for name in wheel_joint_names]
+    wheel_joint_vel = asset.data.joint_vel[:, asset_cfg.joint_ids][:, wheel_joint_idx]
+    target_error = wheel_joint_vel - target_vel
+
+    target_error_mse = torch.mean(torch.square(target_error))
+    
+    return target_error_mse
