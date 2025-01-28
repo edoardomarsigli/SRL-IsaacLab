@@ -86,7 +86,7 @@ def scale_reward_weight_iteration(env: ManagerBasedRLEnv, env_ids: Sequence[int]
         final_weight: The weight of the reward at the end of the episode
     """
     # determine iteration progress
-    env.scene.cfg.
+    # env.scene.cfg.
     maximum_steps = env.step_dt * env.max_episode_length_s 
     progress = env.common_step_counter/maximum_steps 
     

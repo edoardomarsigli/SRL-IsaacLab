@@ -94,8 +94,8 @@ VEHICLE_CFG = ArticulationCfg(
     actuators = {
         "leg1_joints": ImplicitActuatorCfg(
             joint_names_expr=["leg1joint[1-7]"],
-            effort_limit=1000.0,
-            velocity_limit=50.0,
+            effort_limit=200.0,
+            velocity_limit=30.0,
             stiffness=10000,
             damping=1000,
         ),
@@ -116,28 +116,28 @@ VEHICLE_CFG = ArticulationCfg(
         "wheel11_left_joint": ImplicitActuatorCfg(
             joint_names_expr=["wheel11_left_joint"],
             effort_limit=400.0,
-            velocity_limit=30.0,
+            velocity_limit=10.0,
             stiffness=0.0,
             damping=10.0,
         ),
         "wheel11_right_joint": ImplicitActuatorCfg(
             joint_names_expr=["wheel11_right_joint"],
             effort_limit=400.0,
-            velocity_limit=30.0,
+            velocity_limit=10.0,
             stiffness=0.0,
             damping=10.0,
         ),
         "wheel12_left_joint": ImplicitActuatorCfg(
             joint_names_expr=["wheel12_left_joint"],
             effort_limit=400.0,
-            velocity_limit=30.0,
+            velocity_limit=10.0,
             stiffness=0.0,
             damping=10.0,
         ),
         "wheel12_right_joint": ImplicitActuatorCfg(
             joint_names_expr=["wheel12_right_joint"],
             effort_limit=400.0,
-            velocity_limit=30.0,
+            velocity_limit=10.0,
             stiffness=0.0,
             damping=10.0,
         ),

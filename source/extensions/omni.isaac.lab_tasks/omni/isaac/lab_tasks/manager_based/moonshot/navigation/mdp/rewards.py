@@ -295,6 +295,29 @@ def joint_deviation_vehicle_l1(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg
     # angle = asset.data.joint_pos[:, leg_joint_idx4] - vehicle_cfg_angles[:, leg_joint_idx4]
     return torch.sum(torch.abs(angle), dim=1)
 
+def joint_deviation_vehicle_l2(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """Penalize joint positions that deviate from the default one."""
+    # extract the used quantities (to enable type-hinting)
+    asset: Articulation = env.scene[asset_cfg.name]
+    # do not include the grippers revolute joints
+    joint_names = [f"leg1joint{i}" for i in [2,4,6]] 
+    leg_joint_idx = [asset.find_joints(name)[0][0] for name in joint_names]
+    vehicle_cfg_angles = asset.data.default_joint_pos[:, asset_cfg.joint_ids]
+    
+    vehicle_cfg_angles[:, leg_joint_idx[0]] = 0
+    vehicle_cfg_angles[:, leg_joint_idx[1]] = -math.pi/2
+    vehicle_cfg_angles[:, leg_joint_idx[2]] = 0
+    # vehicle_cfg_angles[:, leg_joint_idx[3]] = 0
+    # vehicle_cfg_angles[:, leg_joint_idx[4]] = 0
+    
+    angle = asset.data.joint_pos[:, asset_cfg.joint_ids][:,leg_joint_idx] - vehicle_cfg_angles[:,leg_joint_idx]
+    
+    # leg_joint_idx4 = asset.find_joints("leg1joint4")[0]
+    
+    # angle = asset.data.joint_pos[:, leg_joint_idx4] - vehicle_cfg_angles[:, leg_joint_idx4]
+    return torch.sum(torch.square(angle), dim=1)
+
+
 def wheel_vel_deviation_front(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
     """Penalize wheel velocities that are different, pairwise."""
     # extract the used quantities (to enable type-hinting)
@@ -328,3 +351,24 @@ def wheel_vel_deviation_rear(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg =
     total_wheel_vel_diff = torch.sum(torch.square(rear_wheel_vel_diff))
     
     return total_wheel_vel_diff
+
+# def wheel_vel_deviation(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"), front_weight: float, rear_weight: float) -> torch.Tensor:
+#     """Penalize wheel velocities that are different (SSE), pairwise ."""
+#     # extract the used quantities (to enable type-hinting)
+#     asset: Articulation = env.scene[asset_cfg.name]
+    
+#     wheel_joint_names = ["wheel11_left_joint","wheel11_right_joint","wheel12_left_joint","wheel12_right_joint"] 
+#     wheel_joint_idx =  [asset.find_joints(name)[0][0] for name in wheel_joint_names]
+#     wheel_joint_vel = asset.data.joint_vel[:, asset_cfg.joint_ids][:, wheel_joint_idx]
+
+#     # pairwise wheel velocity diff
+#     front_wheel_vel_diff = wheel_joint_vel[:,0] - wheel_joint_vel[:,1]
+#     rear_wheel_vel_diff = wheel_joint_vel[:,2] - wheel_joint_vel[:,3]
+    
+#     front_wheel_vel_sse = front_weight * torch.sum(torch.square(front_wheel_vel_diff))
+#     rear_wheel_vel_sse = rear_weight * torch.sum(torch.square(rear_wheel_vel_diff))
+    
+    
+#     total_wheel_vel_sse = front_wheel_vel_sse + rear_wheel_vel_sse
+    
+#     return total_wheel_vel_sse
