@@ -52,3 +52,4 @@ def reset_joints_by_offset_vehicle(
 
     # set into the physics simulation
     asset.write_joint_state_to_sim(joint_pos, joint_vel, env_ids=env_ids)
+

@@ -14,7 +14,7 @@ from omni.isaac.lab.utils import configclass
 from .null_command import NullCommand
 from .pose_2d_command import TerrainBasedPose2dCommand, UniformPose2dCommand
 from .pose_command import UniformPoseCommand
-from .velocity_command import UniformWorldVelocityCommand
+from .velocity_command import UniformBodyVelocityCommand
 
 @configclass
 class NullCommandCfg(CommandTermCfg):
@@ -29,13 +29,16 @@ class NullCommandCfg(CommandTermCfg):
 
 
 @configclass
-class UniformWorldVelocityCommandCfg(CommandTermCfg):
+class UniformBodyVelocityCommandCfg(CommandTermCfg):
     """Configuration for the uniform velocity command generator."""
 
-    class_type: type = UniformWorldVelocityCommand
+    class_type: type = UniformBodyVelocityCommand
 
     asset_name: str = "robot"
     """Name of the asset in the environment for which the commands are generated."""
+    
+    body_name: str = MISSING
+    """Name of the asset body whose frame the velocity with respect to."""
 
     heading_command: bool = False
     """Whether to use heading command or angular velocity command. Defaults to False.

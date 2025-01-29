@@ -278,15 +278,15 @@ def joint_deviation_vehicle_l1(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg
     # extract the used quantities (to enable type-hinting)
     asset: Articulation = env.scene[asset_cfg.name]
     # do not include the grippers revolute joints
-    joint_names = [f"leg1joint{i}" for i in [2,4,6]] 
+    joint_names = [f"leg1joint{i}" for i in range(2,7)] 
     leg_joint_idx = [asset.find_joints(name)[0][0] for name in joint_names]
     vehicle_cfg_angles = asset.data.default_joint_pos[:, asset_cfg.joint_ids]
     
     vehicle_cfg_angles[:, leg_joint_idx[0]] = 0
-    vehicle_cfg_angles[:, leg_joint_idx[1]] = -math.pi/2
-    vehicle_cfg_angles[:, leg_joint_idx[2]] = 0
-    # vehicle_cfg_angles[:, leg_joint_idx[3]] = 0
-    # vehicle_cfg_angles[:, leg_joint_idx[4]] = 0
+    vehicle_cfg_angles[:, leg_joint_idx[1]] = 0
+    vehicle_cfg_angles[:, leg_joint_idx[2]] = -math.pi/2
+    vehicle_cfg_angles[:, leg_joint_idx[3]] = 0
+    vehicle_cfg_angles[:, leg_joint_idx[4]] = 0
     
     angle = asset.data.joint_pos[:, asset_cfg.joint_ids][:,leg_joint_idx] - vehicle_cfg_angles[:,leg_joint_idx]
     
@@ -300,15 +300,15 @@ def joint_deviation_vehicle_l2(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg
     # extract the used quantities (to enable type-hinting)
     asset: Articulation = env.scene[asset_cfg.name]
     # do not include the grippers revolute joints
-    joint_names = [f"leg1joint{i}" for i in [2,4,6]] 
+    joint_names = [f"leg1joint{i}" for i in range(2,7)] 
     leg_joint_idx = [asset.find_joints(name)[0][0] for name in joint_names]
     vehicle_cfg_angles = asset.data.default_joint_pos[:, asset_cfg.joint_ids]
     
     vehicle_cfg_angles[:, leg_joint_idx[0]] = 0
-    vehicle_cfg_angles[:, leg_joint_idx[1]] = -math.pi/2
-    vehicle_cfg_angles[:, leg_joint_idx[2]] = 0
-    # vehicle_cfg_angles[:, leg_joint_idx[3]] = 0
-    # vehicle_cfg_angles[:, leg_joint_idx[4]] = 0
+    vehicle_cfg_angles[:, leg_joint_idx[1]] = 0
+    vehicle_cfg_angles[:, leg_joint_idx[2]] = -math.pi/2
+    vehicle_cfg_angles[:, leg_joint_idx[3]] = 0
+    vehicle_cfg_angles[:, leg_joint_idx[4]] = 0
     
     angle = asset.data.joint_pos[:, asset_cfg.joint_ids][:,leg_joint_idx] - vehicle_cfg_angles[:,leg_joint_idx]
     

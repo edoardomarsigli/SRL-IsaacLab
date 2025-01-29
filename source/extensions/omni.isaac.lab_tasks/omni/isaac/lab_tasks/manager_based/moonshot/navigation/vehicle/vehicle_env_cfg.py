@@ -101,7 +101,7 @@ class ActionsCfg:
     joint_vel_action = mdp.JointVelocityActionCfg(asset_name="robot", joint_names=["wheel11_left_joint",
                                                                                    "wheel11_right_joint",
                                                                                    "wheel12_left_joint",
-                                                                                   "wheel12_right_joint"], scale=5.0)
+                                                                                   "wheel12_right_joint"], scale=1.0)
     joint_pos_action = mdp.JointPositionActionCfg(asset_name="robot", joint_names=["leg1.*"], scale = 0.5, use_default_offset=True)
 
 @configclass
@@ -143,7 +143,7 @@ class EventCfg:
     reset_base = EventTerm(
         func=mdp.reset_root_state_uniform,
         mode="reset",
-        params={"pose_range": {}, "velocity_range": {}},
+        params={"pose_range": {"yaw": (-math.pi, math.pi)}, "velocity_range": {}},
     )
 
     reset_robot_joints = EventTerm(
@@ -173,30 +173,32 @@ class RewardsCfg:
     # (4) Reward for wheels having contact with ground 
     desired_contacts_left = RewTerm(
         func=mdp.undesired_contacts,
-        weight=1.0,
+        weight=0.25,
         params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_left"), "threshold": 0.05},
     )
     desired_contacts_right = RewTerm(
         func=mdp.undesired_contacts,
-        weight=1.0,
+        weight=0.25,
         params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_right"), "threshold": 0.05},
     )
 
     # -- penalties
-    # Penalty for acceleration of joints
+    lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_l2, weight=-2.0)
+    ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.05)
+    dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-5)
     dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-7)
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
     # Penalty for not being in vehicle configuration 
-    joint_deviation = RewTerm(func=mdp.joint_deviation_vehicle_l1, weight = -2.0)
+    joint_deviation_l2 = RewTerm(func=mdp.joint_deviation_vehicle_l2, weight = -10.0)
     # Penalty for wheel velocities being different
-    wheel_vel_deviation_front = RewTerm(func=mdp.wheel_vel_deviation_front, weight = -1e-5)
-    wheel_vel_deviation_rear = RewTerm(func=mdp.wheel_vel_deviation_rear, weight = -1e-5)
-    # Penalty for power consumption
-    energy = RewTerm(func=mdp.power_consumption, weight=-0.1, params={"gear_ratio": {".*": 1.0}})
+    # wheel_vel_deviation_front = RewTerm(func=mdp.wheel_vel_deviation_front, weight = -5e-6)
+    # wheel_vel_deviation_rear = RewTerm(func=mdp.wheel_vel_deviation_rear, weight = -5e-6)
+
     # Penalty for arm links to collide with anything
     undesired_contacts = RewTerm(
         func=mdp.undesired_contacts,
-        weight=-5.0,
-        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names="leg1link.*"), "threshold": 0.1},
+        weight=-100.0,
+        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names="leg1link.*"), "threshold": 0.01},
     )
 
 @configclass

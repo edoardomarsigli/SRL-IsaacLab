@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import torch
+import math
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
@@ -21,7 +22,7 @@ from omni.isaac.lab.markers import VisualizationMarkers
 if TYPE_CHECKING:
     from omni.isaac.lab.envs import ManagerBasedEnv
 
-    from .commands_cfg import UniformWorldVelocityCommandCfg
+    from .commands_cfg import UniformBodyVelocityCommandCfg
 
 
 class LowPassFilter:
@@ -71,7 +72,7 @@ def rotate_vector(vector: torch.Tensor, heading: torch.Tensor) -> torch.Tensor:
 
 
 
-class UniformWorldVelocityCommand(CommandTerm):
+class UniformBodyVelocityCommand(CommandTerm):
     r"""Command generator that generates a velocity command in SE(2) from uniform distribution.
 
     The command comprises of a linear velocity in x and y direction and an angular velocity around
@@ -89,10 +90,10 @@ class UniformWorldVelocityCommand(CommandTerm):
 
     """
 
-    cfg: UniformWorldVelocityCommandCfg
+    cfg: UniformBodyVelocityCommandCfg
     """The configuration of the command generator."""
 
-    def __init__(self, cfg: UniformWorldVelocityCommandCfg, env: ManagerBasedEnv):
+    def __init__(self, cfg: UniformBodyVelocityCommandCfg, env: ManagerBasedEnv):
         """Initialize the command generator.
 
         Args:
@@ -127,11 +128,10 @@ class UniformWorldVelocityCommand(CommandTerm):
         self.heading_target = torch.zeros(self.num_envs, device=self.device)
         self.is_heading_env = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
         self.is_standing_env = torch.zeros_like(self.is_heading_env)
+        self.body_link_idx = self.robot.find_bodies(cfg.body_name)[0][0]
         # -- metrics
         self.metrics["error_vel_xy"] = torch.zeros(self.num_envs, device=self.device)
         self.metrics["error_vel_yaw"] = torch.zeros(self.num_envs, device=self.device)
-        self.lin_vel_filter = LowPassFilter(alpha=1E-7)
-        self.ang_vel_filter = LowPassFilter(alpha=1E-7)
 
     def __str__(self) -> str:
         """Return a string representation of the command generator."""
@@ -162,10 +162,12 @@ class UniformWorldVelocityCommand(CommandTerm):
         max_command_time = self.cfg.resampling_time_range[1]
         max_command_step = max_command_time / self._env.step_dt
         # logs data
-        filtered_lin_vel = self.lin_vel_filter.apply(self.robot.data.root_lin_vel_b[:, :2])
-        filtered_ang_vel = self.ang_vel_filter.apply(self.robot.data.root_ang_vel_b[:, 2])
-        self.metrics["error_vel_xy"] += torch.norm(self.vel_command_b[:, :2] - filtered_lin_vel, dim=-1) / max_command_step
-        self.metrics["error_vel_yaw"] += torch.abs(self.vel_command_b[:, 2] - filtered_ang_vel) / max_command_step
+        self.metrics["error_vel_xy"] += (
+            torch.norm(self.vel_command_b[:, :2] - self.robot.data.body_lin_vel_w[:, self.body_link_idx, :2], dim=-1) / max_command_step
+        )
+        self.metrics["error_vel_yaw"] += (
+            torch.abs(self.vel_command_b[:, 2] - self.robot.data.body_ang_vel_w[:,self.body_link_idx, 2]) / max_command_step
+        )
 
     def _resample_command(self, env_ids: Sequence[int]):
         # sample velocity commands
@@ -195,7 +197,7 @@ class UniformWorldVelocityCommand(CommandTerm):
             # resolve indices of heading envs
             env_ids = self.is_heading_env.nonzero(as_tuple=False).flatten()
             # compute angular velocity
-            heading_error = math_utils.wrap_to_pi(self.heading_target[env_ids] - self.robot.data.heading_w[env_ids])
+            heading_error = math_utils.wrap_to_pi(self.heading_target[env_ids] - math_utils.yaw_quat(self.robot.data.body_quat_w[:,self.body_link_idx,:])[env_ids])
             self.vel_command_b[env_ids, 2] = torch.clip(
                 self.cfg.heading_control_stiffness * heading_error,
                 min=self.cfg.ranges.ang_vel_z[0],
@@ -225,23 +227,18 @@ class UniformWorldVelocityCommand(CommandTerm):
                 self.current_vel_visualizer.set_visibility(False)
 
     def _debug_vis_callback(self, event):
-        # Check if robot is initialized
+        # check if robot is initialized
+        # note: this is needed in-case the robot is de-initialized. we can't access the data
         if not self.robot.is_initialized:
             return
-
-        # Get marker location
+        # get marker location
         # -- base state
-        base_pos_w = self.robot.data.root_pos_w.clone()
+        base_pos_w = self.robot.data.body_pos_w[:,self.body_link_idx,:].clone()
         base_pos_w[:, 2] += 0.5
-
-        # Apply low-pass filter to linear velocity (optional: also filter desired velocities if needed)
-        filtered_lin_vel_b = self.lin_vel_filter.apply(self.robot.data.root_lin_vel_b[:, :2])
-
-        # Resolve the scales and quaternions
+        # -- resolve the scales and quaternions
         vel_des_arrow_scale, vel_des_arrow_quat = self._resolve_xy_velocity_to_arrow(self.command[:, :2])
-        vel_arrow_scale, vel_arrow_quat = self._resolve_xy_velocity_to_arrow(filtered_lin_vel_b)
-
-        # Display markers
+        vel_arrow_scale, vel_arrow_quat = self._resolve_xy_velocity_to_arrow(self.robot.data.body_lin_vel_w[:, self.body_link_idx,:2])
+        # display markers
         self.goal_vel_visualizer.visualize(base_pos_w, vel_des_arrow_quat, vel_des_arrow_scale)
         self.current_vel_visualizer.visualize(base_pos_w, vel_arrow_quat, vel_arrow_scale)
 
@@ -261,7 +258,7 @@ class UniformWorldVelocityCommand(CommandTerm):
         zeros = torch.zeros_like(heading_angle)
         arrow_quat = math_utils.quat_from_euler_xyz(zeros, zeros, heading_angle)
         # convert everything back from base to world frame
-        base_quat_w = self.robot.data.root_quat_w
+        base_quat_w = self.robot.data.body_quat_w[:,self.body_link_idx,:]
         arrow_quat = math_utils.quat_mul(base_quat_w, arrow_quat)
 
         return arrow_scale, arrow_quat
