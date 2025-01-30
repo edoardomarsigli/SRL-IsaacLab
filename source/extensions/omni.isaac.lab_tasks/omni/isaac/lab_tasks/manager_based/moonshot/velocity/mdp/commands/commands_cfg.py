@@ -38,7 +38,7 @@ class UniformBodyVelocityCommandCfg(CommandTermCfg):
     """Name of the asset in the environment for which the commands are generated."""
     
     body_name: str = MISSING
-    """Name of the asset body whose frame the velocity with respect to."""
+    """Name of the body in the asset for which the commands are generated."""
 
     heading_command: bool = False
     """Whether to use heading command or angular velocity command. Defaults to False.

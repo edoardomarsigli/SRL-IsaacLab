@@ -49,28 +49,11 @@ class LowPassFilter:
             self.prev_value = self.alpha * value + (1 - self.alpha) * self.prev_value
         return self.prev_value
 
-def rotate_vector(vector: torch.Tensor, heading: torch.Tensor) -> torch.Tensor:
-    """
-    Rotates a vector in the robot's base frame to the world frame.
 
-    Args:
-        vector: A tensor of shape (N, 2), representing the vector in the base frame.
-        heading: A tensor of shape (N,), representing the yaw angle (in radians) of the base.
-
-    Returns:
-        A tensor of shape (N, 2), representing the vector in the world frame.
-    """
-    cos_theta = torch.cos(heading)
-    sin_theta = torch.sin(heading)
-    rotation_matrix = torch.stack(
-        [torch.stack([cos_theta, -sin_theta], dim=-1),
-         torch.stack([sin_theta, cos_theta], dim=-1)],
-        dim=-2
-    )  # Shape: (N, 2, 2)
-
-    return torch.bmm(rotation_matrix, vector.unsqueeze(-1)).squeeze(-1)
-
-
+def quaternion_to_yaw_torch(q):
+    """ Computes yaw (rotation around z) from a batch of quaternions """
+    w, x, y, z = q[..., 0], q[..., 1], q[..., 2], q[..., 3]  # Supports batching
+    return torch.atan2(2 * (w * z + x * y), 1 - 2 * (y**2 + z**2))
 
 class UniformBodyVelocityCommand(CommandTerm):
     r"""Command generator that generates a velocity command in SE(2) from uniform distribution.
@@ -197,7 +180,7 @@ class UniformBodyVelocityCommand(CommandTerm):
             # resolve indices of heading envs
             env_ids = self.is_heading_env.nonzero(as_tuple=False).flatten()
             # compute angular velocity
-            heading_error = math_utils.wrap_to_pi(self.heading_target[env_ids] - math_utils.yaw_quat(self.robot.data.body_quat_w[:,self.body_link_idx,:])[env_ids])
+            heading_error = math_utils.wrap_to_pi(self.heading_target[env_ids] - math_utils.euler_xyz_from_quat(self.robot.data.body_quat_w[:,self.body_link_idx,:])[2][env_ids])
             self.vel_command_b[env_ids, 2] = torch.clip(
                 self.cfg.heading_control_stiffness * heading_error,
                 min=self.cfg.ranges.ang_vel_z[0],
@@ -248,17 +231,24 @@ class UniformBodyVelocityCommand(CommandTerm):
 
     def _resolve_xy_velocity_to_arrow(self, xy_velocity: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Converts the XY base velocity command to arrow direction rotation."""
+
+        base_quat_w = self.robot.data.body_quat_w[:,self.body_link_idx,:]
+        # arrow_quat = math_utils.quat_mul(base_quat_w, arrow_quat)
+        xy_velocity_w = math_utils.quat_rotate(base_quat_w, torch.cat([xy_velocity, torch.zeros_like(xy_velocity[:, :1])], dim=1))[:, :2]
         # obtain default scale of the marker
+        xy_velocity_w = -xy_velocity_w  # Try this if direction is incorrect
         default_scale = self.goal_vel_visualizer.cfg.markers["arrow"].scale
         # arrow-scale
         arrow_scale = torch.tensor(default_scale, device=self.device).repeat(xy_velocity.shape[0], 1)
-        arrow_scale[:, 0] *= torch.linalg.norm(xy_velocity, dim=1) * 3.0
+        # arrow_scale[:, 0] *= torch.linalg.norm(xy_velocity, dim=1) * 3.0
+        arrow_scale[:, 0] *= torch.linalg.norm(xy_velocity_w, dim=1) * 3.0
         # arrow-direction
-        heading_angle = torch.atan2(xy_velocity[:, 1], xy_velocity[:, 0])
+        # heading_angle = torch.atan2(xy_velocity[:, 1], xy_velocity[:, 0])
+        heading_angle = torch.atan2(xy_velocity_w[:, 1], xy_velocity_w[:, 0])
         zeros = torch.zeros_like(heading_angle)
         arrow_quat = math_utils.quat_from_euler_xyz(zeros, zeros, heading_angle)
         # convert everything back from base to world frame
-        base_quat_w = self.robot.data.body_quat_w[:,self.body_link_idx,:]
-        arrow_quat = math_utils.quat_mul(base_quat_w, arrow_quat)
+        # base_quat_w = self.robot.data.body_quat_w[:,self.body_link_idx,:]
+        # arrow_quat = math_utils.quat_mul(base_quat_w, arrow_quat)
 
         return arrow_scale, arrow_quat

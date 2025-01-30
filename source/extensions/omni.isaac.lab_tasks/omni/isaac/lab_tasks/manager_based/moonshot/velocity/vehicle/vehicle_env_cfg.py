@@ -102,14 +102,17 @@ class CommandsCfg:
     body_velocity = mdp.UniformBodyVelocityCommandCfg(
         asset_name="robot",
         body_name="leg1link1",
-        resampling_time_range=(0.0, 0.0),
+        resampling_time_range=(10, 10),
         rel_standing_envs=0.02,
         rel_heading_envs=1.0,
         heading_command=True,
         heading_control_stiffness=0.5,
         debug_vis=True,
-        ranges=mdp.UniformBodyVelocityCommandCfg.Ranges(
-            lin_vel_x=(0.2, 0.5), lin_vel_y=(0, 0), ang_vel_z=(0.0, 0.0), heading=(-math.pi, math.pi)
+        ranges=mdp.UniformVelocityCommandCfg.Ranges(
+            lin_vel_x=(0.5,0.5), 
+            lin_vel_y=(-0.5, 0.5), 
+            ang_vel_z=(-0.0, 0.0), 
+            heading=(-0, 0)
         ),
     )
 
@@ -132,10 +135,10 @@ class ObservationsCfg:
     class PolicyCfg(ObsGroup):
         """Observations for the policy."""
 
-        base_height = ObsTerm(func=mdp.base_pos_z) # todo: replace base with body with IMU (leg1link4)
-        base_lin_vel = ObsTerm(func=mdp.base_lin_vel) 
-        base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
-        base_yaw_roll = ObsTerm(func=mdp.base_yaw_roll)
+        # base_height = ObsTerm(func=mdp.base_pos_z) # todo: replace base with body with IMU (leg1link4)
+        # base_lin_vel = ObsTerm(func=mdp.base_lin_vel) 
+        # base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
+        # base_yaw_roll = ObsTerm(func=mdp.base_yaw_roll)
         joint_pos = ObsTerm(func=mdp.joint_pos_rel)
         joint_vel = ObsTerm(func=mdp.joint_vel_rel)
         velocity_commands = ObsTerm(func=mdp.generated_commands, params={"command_name": "body_velocity"})
@@ -190,16 +193,16 @@ class RewardsCfg:
     )
 
     # (4) Reward for wheels having contact with ground 
-    desired_contacts_left = RewTerm(
-        func=mdp.undesired_contacts,
-        weight=0.25,
-        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_left"), "threshold": 0.05},
-    )
-    desired_contacts_right = RewTerm(
-        func=mdp.undesired_contacts,
-        weight=0.25,
-        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_right"), "threshold": 0.05},
-    )
+    # desired_contacts_left = RewTerm(
+    #     func=mdp.undesired_contacts,
+    #     weight=0.25,
+    #     params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_left"), "threshold": 0.05},
+    # )
+    # desired_contacts_right = RewTerm(
+    #     func=mdp.undesired_contacts,
+    #     weight=0.25,
+    #     params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_right"), "threshold": 0.05},
+    # )
 
     # -- penalties
     lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_l2, weight=-2.0)
