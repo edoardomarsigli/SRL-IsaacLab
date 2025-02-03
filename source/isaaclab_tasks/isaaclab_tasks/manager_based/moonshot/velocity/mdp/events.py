@@ -24,7 +24,8 @@ def reset_joints_by_offset_vehicle(
     velocity_range: tuple[float, float],
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
 ):
-    """Reset the robot joints with offsets around the default position and velocity by the given ranges.
+    """Reset the robot joints with offsets around the default position and velocity by the given ranges. 
+    NOTE: This vehicle mode reset assumes a certain initial joint position of the robot, hence the important offset is manually set. 
 
     This function samples random values from the given ranges and biases the default joint positions and velocities
     by these values. The biased values are then set into the physics simulation.
@@ -35,8 +36,10 @@ def reset_joints_by_offset_vehicle(
     # get default joint state
     joint_pos = asset.data.default_joint_pos[env_ids].clone()
     joint_vel = asset.data.default_joint_vel[env_ids].clone()
+
+    # Joint name and offset value are URDF specific. Be careful.
     vehicle_middle_link_idx = asset.find_joints("leg1joint4")[0]
-    joint_pos[:, vehicle_middle_link_idx] = -math.pi/2
+    joint_pos[:, vehicle_middle_link_idx] = math.pi/2
     
     
     # bias these values randomly

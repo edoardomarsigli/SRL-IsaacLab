@@ -9,16 +9,16 @@ import torch
 import math
 from typing import TYPE_CHECKING
 
-import omni.isaac.lab.utils.math as math_utils
-import omni.isaac.lab.utils.string as string_utils
-from omni.isaac.lab.assets import Articulation
-from omni.isaac.lab.managers import ManagerTermBase, RewardTermCfg, SceneEntityCfg
-from omni.isaac.lab.sensors import ContactSensor
+import isaaclab.utils.math as math_utils
+import isaaclab.utils.string as string_utils
+from isaaclab.assets import Articulation
+from isaaclab.managers import ManagerTermBase, RewardTermCfg, SceneEntityCfg
+from isaaclab.sensors import ContactSensor
 
 from . import observations as obs
 
 if TYPE_CHECKING:
-    from omni.isaac.lab.envs import ManagerBasedRLEnv
+    from isaaclab.envs import ManagerBasedRLEnv
 
 
 def upright_posture_bonus(
@@ -171,7 +171,7 @@ def joint_deviation_vehicle_l1(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg
     
     vehicle_cfg_angles[:, leg_joint_idx[0]] = 0
     vehicle_cfg_angles[:, leg_joint_idx[1]] = 0
-    vehicle_cfg_angles[:, leg_joint_idx[2]] = -math.pi/2
+    vehicle_cfg_angles[:, leg_joint_idx[2]] = math.pi/2
     vehicle_cfg_angles[:, leg_joint_idx[3]] = 0
     vehicle_cfg_angles[:, leg_joint_idx[4]] = 0
     
@@ -193,7 +193,7 @@ def joint_deviation_vehicle_l2(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg
     
     vehicle_cfg_angles[:, leg_joint_idx[0]] = 0
     vehicle_cfg_angles[:, leg_joint_idx[1]] = 0
-    vehicle_cfg_angles[:, leg_joint_idx[2]] = -math.pi/2
+    vehicle_cfg_angles[:, leg_joint_idx[2]] = math.pi/2
     vehicle_cfg_angles[:, leg_joint_idx[3]] = 0
     vehicle_cfg_angles[:, leg_joint_idx[4]] = 0
     

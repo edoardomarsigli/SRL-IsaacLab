@@ -6,29 +6,29 @@
 import math
 from dataclasses import MISSING
 
-import omni.isaac.lab.sim as sim_utils
-from omni.isaac.lab.assets import AssetBaseCfg
-from omni.isaac.lab.envs import ManagerBasedRLEnvCfg
-from omni.isaac.lab.managers import CurriculumTermCfg as CurrTerm
-from omni.isaac.lab.managers import EventTermCfg as EventTerm
-from omni.isaac.lab.managers import ObservationGroupCfg as ObsGroup
-from omni.isaac.lab.managers import ObservationTermCfg as ObsTerm
-from omni.isaac.lab.managers import RewardTermCfg as RewTerm
-from omni.isaac.lab.managers import SceneEntityCfg
-from omni.isaac.lab.managers import TerminationTermCfg as DoneTerm
-from omni.isaac.lab.scene import InteractiveSceneCfg
-from omni.isaac.lab.terrains import TerrainImporterCfg
-from omni.isaac.lab.utils import configclass
-from omni.isaac.lab.sensors import ContactSensorCfg, RayCasterCfg, patterns
+import isaaclab.sim as sim_utils
+from isaaclab.assets import AssetBaseCfg
+from isaaclab.envs import ManagerBasedRLEnvCfg
+from isaaclab.managers import CurriculumTermCfg as CurrTerm
+from isaaclab.managers import EventTermCfg as EventTerm
+from isaaclab.managers import ObservationGroupCfg as ObsGroup
+from isaaclab.managers import ObservationTermCfg as ObsTerm
+from isaaclab.managers import RewardTermCfg as RewTerm
+from isaaclab.managers import SceneEntityCfg
+from isaaclab.managers import TerminationTermCfg as DoneTerm
+from isaaclab.scene import InteractiveSceneCfg
+from isaaclab.terrains import TerrainImporterCfg
+from isaaclab.utils import configclass
+from isaaclab.sensors import ContactSensorCfg, RayCasterCfg, patterns
 
-import omni.isaac.lab_tasks.manager_based.moonshot.velocity.mdp as mdp
+import isaaclab_tasks.manager_based.moonshot.velocity.mdp as mdp
 
-from omni.isaac.lab.utils.assets import ISAAC_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR
+from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR
 ##
 # Pre-defined configs
 ##
-from omni.isaac.lab_tasks.manager_based.moonshot.descriptions.config.moonbot_cfgs import VEHICLE_CFG  # isort: skip
-from omni.isaac.lab_tasks.manager_based.moonshot.velocity.terrain.rough import ROUGH_TERRAINS_CFG
+from isaaclab_tasks.manager_based.moonshot.descriptions.config.moonbot_cfgs import VEHICLE_CFG  # isort: skip
+from isaaclab_tasks.manager_based.moonshot.velocity.terrain.rough import ROUGH_TERRAINS_CFG
 
 @configclass
 class MySceneCfg(InteractiveSceneCfg):
@@ -99,18 +99,18 @@ class MySceneCfg(InteractiveSceneCfg):
 class CommandsCfg:
     """Command specifications for the MDP."""
 
-    body_velocity = mdp.UniformBodyVelocityCommandCfg(
+    body_velocity = mdp.UniformVelocityCommandCfg(
         asset_name="robot",
-        body_name="leg1link1",
+        # body_name="leg1link1",
         resampling_time_range=(10, 10),
         rel_standing_envs=0.02,
         rel_heading_envs=1.0,
-        heading_command=True,
+        heading_command=False,
         heading_control_stiffness=0.5,
         debug_vis=True,
         ranges=mdp.UniformVelocityCommandCfg.Ranges(
-            lin_vel_x=(0.5,0.5), 
-            lin_vel_y=(-0.5, 0.5), 
+            lin_vel_x=(1.0,1.0), 
+            lin_vel_y=(-0.0, 0.0), 
             ang_vel_z=(-0.0, 0.0), 
             heading=(-0, 0)
         ),
@@ -124,8 +124,8 @@ class ActionsCfg:
     joint_vel_action = mdp.JointVelocityActionCfg(asset_name="robot", joint_names=["wheel11_left_joint",
                                                                                    "wheel11_right_joint",
                                                                                    "wheel12_left_joint",
-                                                                                   "wheel12_right_joint"], scale=1.0)
-    joint_pos_action = mdp.JointPositionActionCfg(asset_name="robot", joint_names=["leg1.*"], scale = 0.5, use_default_offset=True)
+                                                                                   "wheel12_right_joint"], scale=5.0)
+    joint_pos_action = mdp.JointPositionActionCfg(asset_name="robot", joint_names=["leg1.*"], scale = 1.0, use_default_offset=True)
 
 @configclass
 class ObservationsCfg:
@@ -136,8 +136,8 @@ class ObservationsCfg:
         """Observations for the policy."""
 
         # base_height = ObsTerm(func=mdp.base_pos_z) # todo: replace base with body with IMU (leg1link4)
-        # base_lin_vel = ObsTerm(func=mdp.base_lin_vel) 
-        # base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
+        base_lin_vel = ObsTerm(func=mdp.base_lin_vel) 
+        base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
         # base_yaw_roll = ObsTerm(func=mdp.base_yaw_roll)
         joint_pos = ObsTerm(func=mdp.joint_pos_rel)
         joint_vel = ObsTerm(func=mdp.joint_vel_rel)
@@ -171,7 +171,7 @@ class EventCfg:
     )
 
     reset_robot_joints = EventTerm(
-        func=mdp.reset_joints_by_offset,
+        func=mdp.reset_joints_by_offset_vehicle,
         mode="reset",
         params={
             "position_range": (-0.0, 0.0),
@@ -207,11 +207,11 @@ class RewardsCfg:
     # -- penalties
     lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_l2, weight=-2.0)
     ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.05)
-    dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-5)
+    # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-5)
     dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-7)
     action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
     # Penalty for not being in vehicle configuration 
-    joint_deviation_l2 = RewTerm(func=mdp.joint_deviation_vehicle_l2, weight = -10.0)
+    joint_deviation_l2 = RewTerm(func=mdp.joint_deviation_vehicle_l2, weight = -5.0)
     # Penalty for wheel velocities being different
     # wheel_vel_deviation_front = RewTerm(func=mdp.wheel_vel_deviation_front, weight = -5e-6)
     # wheel_vel_deviation_rear = RewTerm(func=mdp.wheel_vel_deviation_rear, weight = -5e-6)
@@ -219,7 +219,7 @@ class RewardsCfg:
     # Penalty for arm links to collide with anything
     undesired_contacts = RewTerm(
         func=mdp.undesired_contacts,
-        weight=-100.0,
+        weight=-5.0,
         params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names="leg1link.*"), "threshold": 0.01},
     )
 

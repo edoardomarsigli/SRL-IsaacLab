@@ -6,10 +6,10 @@
 import math
 from dataclasses import MISSING
 
-from omni.isaac.lab.managers import CommandTermCfg
-from omni.isaac.lab.markers import VisualizationMarkersCfg
-from omni.isaac.lab.markers.config import BLUE_ARROW_X_MARKER_CFG, FRAME_MARKER_CFG, GREEN_ARROW_X_MARKER_CFG
-from omni.isaac.lab.utils import configclass
+from isaaclab.managers import CommandTermCfg
+from isaaclab.markers import VisualizationMarkersCfg
+from isaaclab.markers.config import BLUE_ARROW_X_MARKER_CFG, FRAME_MARKER_CFG, GREEN_ARROW_X_MARKER_CFG
+from isaaclab.utils import configclass
 
 from .null_command import NullCommand
 from .pose_2d_command import TerrainBasedPose2dCommand, UniformPose2dCommand

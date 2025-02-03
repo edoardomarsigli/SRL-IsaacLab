@@ -14,13 +14,13 @@ from typing import TYPE_CHECKING
 
 import omni.log
 
-import omni.isaac.lab.utils.math as math_utils
-from omni.isaac.lab.assets import Articulation
-from omni.isaac.lab.managers import CommandTerm
-from omni.isaac.lab.markers import VisualizationMarkers
+import isaaclab.utils.math as math_utils
+from isaaclab.assets import Articulation
+from isaaclab.managers import CommandTerm
+from isaaclab.markers import VisualizationMarkers
 
 if TYPE_CHECKING:
-    from omni.isaac.lab.envs import ManagerBasedEnv
+    from isaaclab.envs import ManagerBasedEnv
 
     from .commands_cfg import UniformBodyVelocityCommandCfg
 

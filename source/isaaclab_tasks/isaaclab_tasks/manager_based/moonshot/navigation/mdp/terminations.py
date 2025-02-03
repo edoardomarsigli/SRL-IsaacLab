@@ -3,14 +3,14 @@ from __future__ import annotations
 import torch
 from typing import TYPE_CHECKING
 
-from omni.isaac.lab.assets import Articulation, RigidObject
-from omni.isaac.lab.managers import SceneEntityCfg
-from omni.isaac.lab.sensors import ContactSensor
-import omni.isaac.lab.utils.math as math_utils
+from isaaclab.assets import Articulation, RigidObject
+from isaaclab.managers import SceneEntityCfg
+from isaaclab.sensors import ContactSensor
+import isaaclab.utils.math as math_utils
 
 if TYPE_CHECKING:
-    from omni.isaac.lab.envs import ManagerBasedRLEnv
-    from omni.isaac.lab.managers.command_manager import CommandTerm
+    from isaaclab.envs import ManagerBasedRLEnv
+    from isaaclab.managers.command_manager import CommandTerm
 
 
 def root_height_above_maximum(

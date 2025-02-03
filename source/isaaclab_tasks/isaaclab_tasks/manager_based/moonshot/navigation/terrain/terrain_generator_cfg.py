@@ -5,7 +5,7 @@
 
 """
 Configuration classes defining the different terrains available. Each configuration class must
-inherit from ``omni.isaac.lab.terrains.terrains_cfg.TerrainConfig`` and define the following attributes:
+inherit from ``isaaclab.terrains.terrains_cfg.TerrainConfig`` and define the following attributes:
 
 - ``name``: Name of the terrain. This is used for the prim name in the USD stage.
 - ``function``: Function to generate the terrain. This function must take as input the terrain difficulty
@@ -20,7 +20,7 @@ from collections.abc import Callable
 from dataclasses import MISSING
 from typing import Literal
 
-from omni.isaac.lab.utils import configclass
+from isaaclab.utils import configclass
 
 
 @configclass
@@ -30,7 +30,7 @@ class FlatPatchSamplingCfg:
     For a given sub-terrain, this configuration specifies how to sample flat patches on the terrain.
     The sampled flat patches can be used for spawning robots, targets, etc.
 
-    Please check the function :meth:`~omni.isaac.lab.terrains.utils.find_flat_patches` for more details.
+    Please check the function :meth:`~isaaclab.terrains.utils.find_flat_patches` for more details.
     """
 
     num_patches: int = MISSING
@@ -91,8 +91,8 @@ class SubTerrainBaseCfg:
     size: tuple[float, float] = (10.0, 10.0)
     """The width (along x) and length (along y) of the terrain (in m). Defaults to (10.0, 10.0).
 
-    In case the :class:`~omni.isaac.lab.terrains.TerrainImporterCfg` is used, this parameter gets overridden by
-    :attr:`omni.isaac.lab.scene.TerrainImporterCfg.size` attribute.
+    In case the :class:`~isaaclab.terrains.TerrainImporterCfg` is used, this parameter gets overridden by
+    :attr:`isaaclab.scene.TerrainImporterCfg.size` attribute.
     """
 
     flat_patch_sampling: dict[str, FlatPatchSamplingCfg] | None = None
