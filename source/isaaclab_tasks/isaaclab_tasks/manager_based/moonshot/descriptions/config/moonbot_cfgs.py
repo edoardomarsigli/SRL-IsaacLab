@@ -74,7 +74,7 @@ VEHICLE_CFG = ArticulationCfg(
             rigid_body_enabled=True,
             max_linear_velocity=1000.0,
             max_angular_velocity=1000.0,
-            max_depenetration_velocity=1.0,
+            max_depenetration_velocity=10.0,
             enable_gyroscopic_forces=True,
         ),
         articulation_props=sim_utils.ArticulationRootPropertiesCfg(
@@ -96,7 +96,7 @@ VEHICLE_CFG = ArticulationCfg(
             joint_names_expr=["leg1joint[1-7]"],
             effort_limit=136.11,
             velocity_limit=0.145,
-            stiffness=1e5,
+            stiffness=1e6,
             damping=100,
         ),
         "wheel_joints": ImplicitActuatorCfg(
@@ -105,7 +105,7 @@ VEHICLE_CFG = ArticulationCfg(
                               "wheel12_left_joint",
                               "wheel12_right_joint"],
             effort_limit=136.11,
-            velocity_limit=0.145,
+            velocity_limit=0.5,
             stiffness=0,
             damping=10.0
         ),

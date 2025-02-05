@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 
 import isaaclab.utils.math as math_utils
 import isaaclab.utils.string as string_utils
-from isaaclab.assets import Articulation
+from isaaclab.assets import Articulation, RigidObject
 from isaaclab.managers import ManagerTermBase, RewardTermCfg, SceneEntityCfg
 from isaaclab.sensors import ContactSensor
 
@@ -238,3 +238,59 @@ def wheel_vel_deviation_rear(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg =
     total_wheel_vel_diff = torch.sum(torch.square(rear_wheel_vel_diff))
     
     return total_wheel_vel_diff
+
+
+def track_lin_vel_xy_exp_vehicle(
+    env: ManagerBasedRLEnv, std: float, command_name: str, body_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    """Reward tracking of linear velocity commands (xy axes) using exponential kernel."""
+    # extract the used quantities (to enable type-hinting)
+    asset: RigidObject = env.scene[asset_cfg.name]
+    body_link_idx = asset.find_bodies(body_name)[0][0]
+    # compute the error
+    lin_vel_error = torch.sum(
+        torch.square(env.command_manager.get_command(command_name)[:, :2] - asset.data.body_lin_vel_w[:, body_link_idx, :2]),
+        dim=1,
+    )
+    return torch.exp(-lin_vel_error / std**2)
+
+
+def track_ang_vel_z_exp_vehicle(
+    env: ManagerBasedRLEnv, std: float, command_name: str, body_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    """Reward tracking of angular velocity commands (yaw) using exponential kernel."""
+    # extract the used quantities (to enable type-hinting)
+    asset: RigidObject = env.scene[asset_cfg.name]
+    body_link_idx = asset.find_bodies(body_name)[0][0]
+    # compute the error
+    ang_vel_error = torch.square(env.command_manager.get_command(command_name)[:, 2] - asset.data.body_ang_vel_w[:,body_link_idx, 2])
+    return torch.exp(-ang_vel_error / std**2)
+
+def lin_vel_z_body_l2(env: ManagerBasedRLEnv, body_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """Penalize z-axis base linear velocity using L2 squared kernel."""
+    # extract the used quantities (to enable type-hinting)
+    asset: RigidObject = env.scene[asset_cfg.name]
+    body_link_idx = asset.find_bodies(body_name)[0][0]
+
+    return torch.square(asset.data.body_lin_vel_w[:,body_link_idx, 2])
+
+def joint_torques_vehicle_l2(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """Penalize joint torques applied on the articulation using L2 squared kernel.
+
+    NOTE: Only the joints configured in :attr:`asset_cfg.joint_ids` will have their joint torques contribute to the term.
+    """
+    # extract the used quantities (to enable type-hinting)
+    asset: Articulation = env.scene[asset_cfg.name]
+    joint_names = [f"leg1joint{i}" for i in range(2,7)] 
+    leg_joint_idx = [asset.find_joints(name)[0][0] for name in joint_names]
+
+
+    return torch.sum(torch.square(asset.data.applied_torque[:, leg_joint_idx]), dim=1)
+
+def lin_acc_body_l2(env: ManagerBasedRLEnv, body_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """Penalize z-axis base linear velocity using L2 squared kernel."""
+    # extract the used quantities (to enable type-hinting)
+    asset: RigidObject = env.scene[asset_cfg.name]
+    body_link_idx = asset.find_bodies(body_name)[0][0]
+
+    return torch.sum(torch.square(asset.data.body_lin_acc_w[:, body_link_idx, :]), dim=1)
