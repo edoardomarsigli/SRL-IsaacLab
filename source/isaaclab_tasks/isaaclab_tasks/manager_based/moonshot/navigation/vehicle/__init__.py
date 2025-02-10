@@ -16,7 +16,7 @@ from . import agents
 ##
 
 gym.register(
-    id="Moonshot-Navigation-Vehicle-Direction-v0",
+    id="Moonshot-Navigation-Vehicle-v0",
     entry_point="isaaclab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={

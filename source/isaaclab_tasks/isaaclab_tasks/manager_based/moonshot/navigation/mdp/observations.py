@@ -73,3 +73,26 @@ def base_angle_to_target(
     angle_to_target = torch.atan2(torch.sin(angle_to_target), torch.cos(angle_to_target))
 
     return angle_to_target.unsqueeze(-1)
+
+def body_pos_z(env: ManagerBasedEnv, body_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """Root height in the simulation world frame."""
+    # extract the used quantities (to enable type-hinting)
+    asset: Articulation = env.scene[asset_cfg.name]
+    body_link_idx = asset.find_bodies(body_name)[0][0]
+    return asset.data.body_pos_w[:,body_link_idx ,2].unsqueeze(-1)
+
+
+def body_lin_vel(env: ManagerBasedEnv, body_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """Root linear velocity in the asset's root frame."""
+    # extract the used quantities (to enable type-hinting)
+    asset: Articulation = env.scene[asset_cfg.name]
+    body_link_idx = asset.find_bodies(body_name)[0][0]
+    return asset.data.body_lin_vel_w[:, body_link_idx, :]
+
+
+def body_ang_vel(env: ManagerBasedEnv, body_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """Root angular velocity in the asset's root frame."""
+    # extract the used quantities (to enable type-hinting)
+    asset: Articulation = env.scene[asset_cfg.name]
+    body_link_idx = asset.find_bodies(body_name)[0][0]
+    return asset.data.body_ang_vel_w[:, body_link_idx ,:]

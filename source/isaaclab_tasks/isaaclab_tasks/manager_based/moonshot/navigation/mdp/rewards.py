@@ -284,7 +284,7 @@ def joint_deviation_vehicle_l1(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg
     
     vehicle_cfg_angles[:, leg_joint_idx[0]] = 0
     vehicle_cfg_angles[:, leg_joint_idx[1]] = 0
-    vehicle_cfg_angles[:, leg_joint_idx[2]] = -math.pi/2
+    vehicle_cfg_angles[:, leg_joint_idx[2]] = math.pi/2
     vehicle_cfg_angles[:, leg_joint_idx[3]] = 0
     vehicle_cfg_angles[:, leg_joint_idx[4]] = 0
     
@@ -306,7 +306,7 @@ def joint_deviation_vehicle_l2(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg
     
     vehicle_cfg_angles[:, leg_joint_idx[0]] = 0
     vehicle_cfg_angles[:, leg_joint_idx[1]] = 0
-    vehicle_cfg_angles[:, leg_joint_idx[2]] = -math.pi/2
+    vehicle_cfg_angles[:, leg_joint_idx[2]] = math.pi/2
     vehicle_cfg_angles[:, leg_joint_idx[3]] = 0
     vehicle_cfg_angles[:, leg_joint_idx[4]] = 0
     
@@ -352,27 +352,6 @@ def wheel_vel_deviation_rear(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg =
     
     return total_wheel_vel_diff
 
-# def wheel_vel_deviation(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"), front_weight: float, rear_weight: float) -> torch.Tensor:
-#     """Penalize wheel velocities that are different (SSE), pairwise ."""
-#     # extract the used quantities (to enable type-hinting)
-#     asset: Articulation = env.scene[asset_cfg.name]
-    
-#     wheel_joint_names = ["wheel11_left_joint","wheel11_right_joint","wheel12_left_joint","wheel12_right_joint"] 
-#     wheel_joint_idx =  [asset.find_joints(name)[0][0] for name in wheel_joint_names]
-#     wheel_joint_vel = asset.data.joint_vel[:, asset_cfg.joint_ids][:, wheel_joint_idx]
-
-#     # pairwise wheel velocity diff
-#     front_wheel_vel_diff = wheel_joint_vel[:,0] - wheel_joint_vel[:,1]
-#     rear_wheel_vel_diff = wheel_joint_vel[:,2] - wheel_joint_vel[:,3]
-    
-#     front_wheel_vel_sse = front_weight * torch.sum(torch.square(front_wheel_vel_diff))
-#     rear_wheel_vel_sse = rear_weight * torch.sum(torch.square(rear_wheel_vel_diff))
-    
-    
-#     total_wheel_vel_sse = front_wheel_vel_sse + rear_wheel_vel_sse
-    
-#     return total_wheel_vel_sse
-
 def wheel_vel_reward(env: ManagerBasedRLEnv, target_vel: float, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
     """Reward wheel velocities close to target vel."""
     # extract the used quantities (to enable type-hinting)
@@ -386,3 +365,32 @@ def wheel_vel_reward(env: ManagerBasedRLEnv, target_vel: float, asset_cfg: Scene
     target_error_mse = torch.mean(torch.square(target_error))
     
     return target_error_mse
+
+def lin_vel_z_body_l2(env: ManagerBasedRLEnv, body_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """Penalize z-axis base linear velocity using L2 squared kernel."""
+    # extract the used quantities (to enable type-hinting)
+    asset: RigidObject = env.scene[asset_cfg.name]
+    body_link_idx = asset.find_bodies(body_name)[0][0]
+
+    return torch.square(asset.data.body_lin_vel_w[:,body_link_idx, 2])
+
+def joint_torques_vehicle_l2(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """Penalize joint torques applied on the articulation using L2 squared kernel.
+
+    NOTE: Only the joints configured in :attr:`asset_cfg.joint_ids` will have their joint torques contribute to the term.
+    """
+    # extract the used quantities (to enable type-hinting)
+    asset: Articulation = env.scene[asset_cfg.name]
+    joint_names = [f"leg1joint{i}" for i in range(2,7)] 
+    leg_joint_idx = [asset.find_joints(name)[0][0] for name in joint_names]
+
+
+    return torch.sum(torch.square(asset.data.applied_torque[:, leg_joint_idx]), dim=1)
+
+def lin_acc_body_l2(env: ManagerBasedRLEnv, body_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """Penalize z-axis base linear velocity using L2 squared kernel."""
+    # extract the used quantities (to enable type-hinting)
+    asset: RigidObject = env.scene[asset_cfg.name]
+    body_link_idx = asset.find_bodies(body_name)[0][0]
+
+    return torch.sum(torch.square(asset.data.body_lin_acc_w[:, body_link_idx, :]), dim=1)

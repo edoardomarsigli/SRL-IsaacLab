@@ -13,7 +13,7 @@ import isaaclab.utils.math as math_utils
 import isaaclab.utils.string as string_utils
 from isaaclab.assets import Articulation, RigidObject
 from isaaclab.managers import ManagerTermBase, RewardTermCfg, SceneEntityCfg
-from isaaclab.sensors import ContactSensor
+from isaaclab.sensors import ContactSensor, RayCaster
 
 from . import observations as obs
 
@@ -26,7 +26,7 @@ def upright_posture_bonus(
 ) -> torch.Tensor:
     """Reward for maintaining an upright posture."""
     up_proj = obs.base_up_proj(env, asset_cfg).squeeze(-1)
-    return (up_proj > threshold).float()
+    return torch.square(up_proj - threshold).float()
 
 
 def move_to_target_bonus(
@@ -165,15 +165,15 @@ def joint_deviation_vehicle_l1(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg
     # extract the used quantities (to enable type-hinting)
     asset: Articulation = env.scene[asset_cfg.name]
     # do not include the grippers revolute joints
-    joint_names = [f"leg1joint{i}" for i in range(2,7)] 
+    joint_names = [f"leg1joint{i}" for i in range(4,5)] 
     leg_joint_idx = [asset.find_joints(name)[0][0] for name in joint_names]
     vehicle_cfg_angles = asset.data.default_joint_pos[:, asset_cfg.joint_ids]
     
     vehicle_cfg_angles[:, leg_joint_idx[0]] = 0
-    vehicle_cfg_angles[:, leg_joint_idx[1]] = 0
-    vehicle_cfg_angles[:, leg_joint_idx[2]] = math.pi/2
-    vehicle_cfg_angles[:, leg_joint_idx[3]] = 0
-    vehicle_cfg_angles[:, leg_joint_idx[4]] = 0
+    # vehicle_cfg_angles[:, leg_joint_idx[1]] = 0
+    # vehicle_cfg_angles[:, leg_joint_idx[2]] = 0 # math.pi/2
+    # vehicle_cfg_angles[:, leg_joint_idx[3]] = 0
+    # vehicle_cfg_angles[:, leg_joint_idx[4]] = 0
     
     angle = asset.data.joint_pos[:, asset_cfg.joint_ids][:,leg_joint_idx] - vehicle_cfg_angles[:,leg_joint_idx]
     
@@ -187,17 +187,17 @@ def joint_deviation_vehicle_l2(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg
     # extract the used quantities (to enable type-hinting)
     asset: Articulation = env.scene[asset_cfg.name]
     # do not include the grippers revolute joints
-    joint_names = [f"leg1joint{i}" for i in range(2,7)] 
+    joint_names = [f"leg1joint{i}" for i in range(4,5)] 
     leg_joint_idx = [asset.find_joints(name)[0][0] for name in joint_names]
     vehicle_cfg_angles = asset.data.default_joint_pos[:, asset_cfg.joint_ids]
     
     vehicle_cfg_angles[:, leg_joint_idx[0]] = 0
-    vehicle_cfg_angles[:, leg_joint_idx[1]] = 0
-    vehicle_cfg_angles[:, leg_joint_idx[2]] = math.pi/2
-    vehicle_cfg_angles[:, leg_joint_idx[3]] = 0
-    vehicle_cfg_angles[:, leg_joint_idx[4]] = 0
+    # vehicle_cfg_angles[:, leg_joint_idx[1]] = 0
+    # vehicle_cfg_angles[:, leg_joint_idx[2]] = 0 # math.pi/2
+    # vehicle_cfg_angles[:, leg_joint_idx[3]] = 0
+    # vehicle_cfg_angles[:, leg_joint_idx[4]] = 0
     
-    angle = asset.data.joint_pos[:, asset_cfg.joint_ids][:,leg_joint_idx] - vehicle_cfg_angles[:,leg_joint_idx]
+    angle = asset.data.joint_pos[:, leg_joint_idx] - vehicle_cfg_angles[:,leg_joint_idx]
     
     # leg_joint_idx4 = asset.find_joints("leg1joint4")[0]
     
@@ -266,13 +266,13 @@ def track_ang_vel_z_exp_vehicle(
     ang_vel_error = torch.square(env.command_manager.get_command(command_name)[:, 2] - asset.data.body_ang_vel_w[:,body_link_idx, 2])
     return torch.exp(-ang_vel_error / std**2)
 
-def lin_vel_z_body_l2(env: ManagerBasedRLEnv, body_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+def lin_vel_z_body_l2(env: ManagerBasedRLEnv, body_names: list, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
     """Penalize z-axis base linear velocity using L2 squared kernel."""
     # extract the used quantities (to enable type-hinting)
-    asset: RigidObject = env.scene[asset_cfg.name]
-    body_link_idx = asset.find_bodies(body_name)[0][0]
+    asset: Articulation = env.scene[asset_cfg.name]
+    body_link_idx = [asset.find_bodies(name)[0][0] for name in body_names]
 
-    return torch.square(asset.data.body_lin_vel_w[:,body_link_idx, 2])
+    return torch.sum(torch.square(asset.data.body_lin_vel_w[:, body_link_idx, 2]), dim=1)
 
 def joint_torques_vehicle_l2(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
     """Penalize joint torques applied on the articulation using L2 squared kernel.
@@ -287,10 +287,37 @@ def joint_torques_vehicle_l2(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg =
 
     return torch.sum(torch.square(asset.data.applied_torque[:, leg_joint_idx]), dim=1)
 
-def lin_acc_body_l2(env: ManagerBasedRLEnv, body_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
-    """Penalize z-axis base linear velocity using L2 squared kernel."""
+def lin_acc_body_l2(env: ManagerBasedRLEnv, body_names: list, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """Penalize linear acceleration of bodies using L2 squared kernel."""
+    # extract the used quantities (to enable type-hinting)
+    asset: Articulation = env.scene[asset_cfg.name]
+    body_link_idx = [asset.find_bodies(name)[0][0] for name in body_names]
+
+    return torch.sum(torch.norm(asset.data.body_lin_acc_w[:, body_link_idx, :], dim = -1), dim=1)
+
+def body_height_l2(
+    env: ManagerBasedRLEnv,
+    body_name: str,
+    target_height: float,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    sensor_cfg: SceneEntityCfg | None = None,
+) -> torch.Tensor:
+    """Penalize asset height from its target using L2 squared kernel.
+
+    Note:
+        For flat terrain, target height is in the world frame. For rough terrain,
+        sensor readings can adjust the target height to account for the terrain.
+    """
     # extract the used quantities (to enable type-hinting)
     asset: RigidObject = env.scene[asset_cfg.name]
     body_link_idx = asset.find_bodies(body_name)[0][0]
+    if sensor_cfg is not None:
+        sensor: RayCaster = env.scene[sensor_cfg.name]
+        # Adjust the target height using the sensor data
+        adjusted_target_height = target_height + torch.mean(sensor.data.ray_hits_w[..., 2], dim=1)
+    else:
+        # Use the provided target height directly for flat terrain
+        adjusted_target_height = target_height
+    # Compute the L2 squared penalty
+    return torch.square(asset.data.body_pos_w[:,body_link_idx,2] - adjusted_target_height)
 
-    return torch.sum(torch.square(asset.data.body_lin_acc_w[:, body_link_idx, :]), dim=1)

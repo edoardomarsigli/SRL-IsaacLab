@@ -82,7 +82,7 @@ class MySceneCfg(InteractiveSceneCfg):
     #     debug_vis=True,
     #     mesh_prim_paths=["/World/ground"],
     # )
-    contact_forces = ContactSensorCfg(prim_path="{ENV_REGEX_NS}/Robot/.*", history_length=3, track_air_time=True)
+    contact_forces = ContactSensorCfg(prim_path="{ENV_REGEX_NS}/Robot/.*", history_length=3, track_air_time=False)
 
     # lights
     light = AssetBaseCfg(
@@ -100,20 +100,20 @@ class MySceneCfg(InteractiveSceneCfg):
 class CommandsCfg:
     """Command specifications for the MDP."""
 
-    body_velocity = mdp.UniformBodyVelocityCommandCfg(
+    body_velocity = mdp.UniformVelocityCommandCfg(
         asset_name="robot",
-        body_name="leg1link2",
+        # body_name="leg1link2",
         resampling_time_range=(10, 10),
         rel_standing_envs=0.02,
         rel_heading_envs=1.0,
-        heading_command=False,
+        heading_command=True,
         heading_control_stiffness=0.5,
         debug_vis=True,
         ranges=mdp.UniformVelocityCommandCfg.Ranges(
-            lin_vel_x=(0.05,0.05), 
-            lin_vel_y=(-0.0, 0.0), 
-            ang_vel_z=(-0.0, 0.0), 
-            heading=(-0, 0)
+            lin_vel_x=(0.05, 0.10), 
+            lin_vel_y=(0, 0), 
+            ang_vel_z=(-math.pi/4, math.pi/4), 
+            heading=(-math.pi, math.pi)
         ),
     )
 
@@ -126,8 +126,14 @@ class ActionsCfg:
                                                                                    "wheel11_right_joint",
                                                                                    "wheel12_left_joint",
                                                                                    "wheel12_right_joint"], scale=5.0)
-    joint_pos_action = mdp.JointPositionActionCfg(asset_name="robot", joint_names=["leg1.*"], scale = 1.0, use_default_offset=True)
-
+    joint_pos_action = mdp.JointPositionActionCfg(asset_name="robot", joint_names=["leg1.*"], scale = 0.25, use_default_offset=True)
+    # joint_steer_pos_action = mdp.JointPositionActionCfg(asset_name="robot", joint_names=["leg1joint1","leg1joint7"], scale = 1.0, use_default_offset=True)
+    # joint_bridge_pos_action = mdp.JointPositionToLimitsActionCfg(asset_name="robot", 
+    #                                                              joint_names=["leg1joint[2-6]"], 
+    #                                                              scale = 1.0,
+    #                                                              rescale_to_limits = True,
+    #                                                              clip = {"leg1joint[2-6]": (-0.05,0.05)}
+    #                                                              )
 @configclass
 class ObservationsCfg:
     """Observation specifications for the MDP."""
@@ -137,19 +143,30 @@ class ObservationsCfg:
         """Observations for the policy."""
 
         # Body "leg1link4" contains IMU, as such we use observations from this link
-        body_lin_vel = ObsTerm(func=mdp.body_lin_vel,
-                               params = {"body_name": "leg1link4"})
-        body_ang_vel = ObsTerm(func=mdp.body_ang_vel,
-                               params = {"body_name": "leg1link4"})
-        body_height = ObsTerm(func=mdp.body_pos_z,
-                               params = {"body_name": "leg1link4"})
-        joint_pos = ObsTerm(func=mdp.joint_pos_rel, 
-                            noise=Unoise(n_min=-0.01, n_max=0.01)
-                            )
-        joint_vel = ObsTerm(func=mdp.joint_vel_rel, 
-                            noise=Unoise(n_min=-0.05, n_max=0.05)
-                            )
-        velocity_commands = ObsTerm(func=mdp.generated_commands, params={"command_name": "body_velocity"})
+        body_lin_vel = ObsTerm(
+            func=mdp.body_lin_vel,
+            params = {"body_name": "leg1link4"}
+        )
+        body_ang_vel = ObsTerm(
+            func=mdp.body_ang_vel,
+            params = {"body_name": "leg1link4"}
+        )
+        projected_gravity = ObsTerm(
+            func=mdp.projected_gravity,
+            # noise=Unoise(n_min=-0.05, n_max=0.05),
+        )
+        joint_pos = ObsTerm(
+            func=mdp.joint_pos_rel, 
+            # noise=Unoise(n_min=-0.01, n_max=0.01)
+        )
+        joint_vel = ObsTerm(
+            func=mdp.joint_vel_rel, 
+            # noise=Unoise(n_min=-0.05, n_max=0.05)
+        )
+        velocity_commands = ObsTerm(
+            func=mdp.generated_commands, 
+            params={"command_name": "body_velocity"}
+        )
 
         # height_scan = ObsTerm(
         #     func=mdp.height_scan,
@@ -175,11 +192,11 @@ class EventCfg:
     reset_base = EventTerm(
         func=mdp.reset_root_state_uniform,
         mode="reset",
-        params={"pose_range": {"yaw": (0,0)}, "velocity_range": {}},
+        params={"pose_range": {"yaw": (-math.pi,math.pi)}, "velocity_range": {}},
     )
 
     reset_robot_joints = EventTerm(
-        func=mdp.reset_joints_by_offset_vehicle,
+        func=mdp.reset_joints_by_offset,
         mode="reset",
         params={
             "position_range": (-0.0, 0.0),
@@ -187,22 +204,51 @@ class EventCfg:
         },
     )
 
+    # physics_material = EventTerm(
+    #     func=mdp.randomize_rigid_body_material,
+    #     mode="startup",
+    #     params={
+    #         "asset_cfg": SceneEntityCfg("robot", body_names="wheel.*"),
+    #         "static_friction_range": (0.6, 0.1),
+    #         "dynamic_friction_range": (0.4, 0.8),
+    #         "restitution_range": (0.0, 0.0),
+    #         "num_buckets": 64,
+    #     },
+    # )
+
+    # push_robot = EventTerm(
+    #     func=mdp.push_by_setting_velocity,
+    #     mode="interval",
+    #     interval_range_s=(10.0, 15.0),
+    #     params={"velocity_range": {"x": (-0.1, 0.1), "y": (-0.1, 0.1)}},
+    # )
+
 
 @configclass
 class RewardsCfg:
     """Reward terms for the MDP."""
     # -- task
     track_lin_vel_xy_exp = RewTerm(
-        func=mdp.track_lin_vel_xy_exp_vehicle, weight=1.0, params={"command_name": "body_velocity",
-                                                                   "body_name": "leg1link2", 
-                                                                   "std": math.sqrt(0.001)}
+        func=mdp.track_lin_vel_xy_exp, weight=1.0, params={"command_name": "body_velocity",
+                                                                #    "body_name": "leg1link2", 
+                                                                   "std": math.sqrt(0.1)}
     )
     track_ang_vel_z_exp = RewTerm(
-        func=mdp.track_ang_vel_z_exp_vehicle, weight=0.5, params={"command_name": "body_velocity", 
-                                                                  "body_name": "leg1link2",
-                                                                  "std": math.sqrt(0.001)}
+        func=mdp.track_ang_vel_z_exp, weight=0.5, params={"command_name": "body_velocity", 
+                                                                #   "body_name": "leg1link2",
+                                                                  "std": math.sqrt(0.25)}
     )
 
+    # -- posture rewards
+    # upright_posture = RewTerm(func=mdp.upright_posture_bonus, weight = -1.0, params = {"threshold": 1.0})
+    
+    # body_height_1 = RewTerm(func=mdp.body_height_l2, weight = 1.0, params = {"body_name": "leg1link6",
+    #                                                                          "target_height": 0.6536},
+                                                                    
+    # )
+    # body_height_2 = RewTerm(func=mdp.body_height_l2, weight = 1.0, params = {"body_name": "leg1link2",
+    #                                                                          "target_height": 0.6536}
+    # )
     # (4) Reward for wheels having contact with ground 
     # desired_contacts_left = RewTerm(
     #     func=mdp.undesired_contacts,
@@ -216,24 +262,24 @@ class RewardsCfg:
     # )
 
     # -- penalties
-    termination_penalty = RewTerm(func=mdp.is_terminated, weight=-1.0e3)
-    lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_body_l2, weight=-1.0, params = {"body_name": "leg1link2"})
-    # lin_acc_l2 = RewTerm(func=mdp.lin_acc_body_l2, weight=-1e-3, params = {"body_name": "leg1link2"})
+    termination_penalty = RewTerm(func=mdp.is_terminated, weight=-1.0e4)
+    lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_body_l2, weight=-100.0, params = {"body_names": ["leg1link4"]})
+    lin_acc_l2 = RewTerm(func=mdp.lin_acc_body_l2, weight=-1e-2, params = {"body_names": ["leg1link4"]})
     # ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.05)
     # dof_torques_l2 = RewTerm(func=mdp.joint_torques_vehicle_l2, weight=-2.5e-6)
-    dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-1e-4)
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-1.0e-2)
+    dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-1.0e-5)
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-1.0e-3)
     # Penalty for not being in vehicle configuration 
-    joint_deviation_l1 = RewTerm(func=mdp.joint_deviation_vehicle_l1, weight = -2.0)
+    # joint_deviation_l1 = RewTerm(func=mdp.joint_deviation_vehicle_l1, weight = -1.0)
     # Penalty for wheel velocities being different
     # wheel_vel_deviation_front = RewTerm(func=mdp.wheel_vel_deviation_front, weight = -5e-6)
     # wheel_vel_deviation_rear = RewTerm(func=mdp.wheel_vel_deviation_rear, weight = -5e-6)
-    energy = RewTerm(func=mdp.power_consumption, weight=-0.2, params={"gear_ratio": {".*": 1.0}})
+    energy = RewTerm(func=mdp.power_consumption, weight=-1.0e-1, params={"gear_ratio": {".*": 1.0}})
     # Penalty for arm links to collide with anything
     # undesired_contacts = RewTerm(
     #     func=mdp.undesired_contacts,
-    #     weight=-5.0,
-    #     params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names="leg1link.*"), "threshold": 0.01},
+    #     weight=-100.0,
+    #     params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names="leg1link.*"), "threshold": 0.001},
     # )
 
 
@@ -248,7 +294,7 @@ class TerminationsCfg:
     # (2) Terminate if any of the vehicle arm links collide with something
     base_contact = DoneTerm(
         func=mdp.illegal_contact,
-        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names="leg1link.*"), "threshold": 0.01},
+        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names="leg1link.*"), "threshold": 1.0},
     )
 
 @configclass

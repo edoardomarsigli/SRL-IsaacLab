@@ -15,7 +15,7 @@ from isaaclab_rl.rsl_rl import (
 @configclass
 class VehiclePPORunnerCfg(RslRlOnPolicyRunnerCfg):
     num_steps_per_env = 32
-    max_iterations = 2000
+    max_iterations = 20000
     save_interval = 100
     experiment_name = "vehicle_vel"
     empirical_normalization = False

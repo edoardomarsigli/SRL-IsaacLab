@@ -7,7 +7,7 @@ from isaaclab.actuators import ImplicitActuatorCfg
 from isaaclab.assets import ArticulationCfg
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 import isaaclab_tasks.manager_based.moonshot.utils as moonshot_utils
-
+import math
 
 # Get full path, replace is for Windows paths
 ISAAC_LAB_PATH = moonshot_utils.find_isaaclab_path().replace("\\","/") #  
@@ -88,12 +88,20 @@ VEHICLE_CFG = ArticulationCfg(
     ),
     init_state=ArticulationCfg.InitialStateCfg(
     pos=(0.0, 0.0, 0.30),
-    # rot=(0.92388,0,0.38268,0), # comment out if EventTerm: reset_joints_by_offset_vehicle() is enabled
-    joint_pos={".*": 0.0},
+    joint_pos = {".*": 0.0}
     ),
+    # joint_pos={"wheel.*": 0.0,
+    #            "leg1joint[1-3]": 0.0,
+    #            "leg1joint4": math.pi/2,
+    #            "leg1joint[5-7]": 0.0},
+    # ),
+    # soft_joint_pos_limit_factor = 0.1,
+    
     actuators = {
         "leg_joints": ImplicitActuatorCfg(
-            joint_names_expr=["leg1joint[1-7]"],
+            joint_names_expr=["leg1joint1",
+                              "leg1joint4",
+                              "leg1joint7"],
             effort_limit=136.11,
             velocity_limit=0.145,
             stiffness=1e6,
@@ -142,6 +150,7 @@ CARTER_CFG = ArticulationCfg(
             stabilization_threshold=0.001,
             # fix_root_link=True,
         ),
+        # soft_joint_pos_limit_factor = 0.5,
     ),
     init_state=ArticulationCfg.InitialStateCfg(
     pos=(0.0, 0.0, 0.25), 
