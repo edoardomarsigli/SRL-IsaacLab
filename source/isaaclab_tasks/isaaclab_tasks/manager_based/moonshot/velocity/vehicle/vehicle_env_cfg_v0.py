@@ -106,7 +106,7 @@ class CommandsCfg:
         resampling_time_range=(10, 10),
         rel_standing_envs=0.02,
         rel_heading_envs=1.0,
-        heading_command=True,
+        heading_command=False,
         heading_control_stiffness=0.5,
         debug_vis=True,
         ranges=mdp.UniformVelocityCommandCfg.Ranges(
@@ -126,7 +126,7 @@ class ActionsCfg:
                                                                                    "wheel11_right_joint",
                                                                                    "wheel12_left_joint",
                                                                                    "wheel12_right_joint"], scale=5.0)
-    joint_pos_action = mdp.JointPositionActionCfg(asset_name="robot", joint_names=["leg1.*"], scale = 0.25, use_default_offset=True)
+    joint_pos_action = mdp.JointPositionActionCfg(asset_name="robot", joint_names=["leg1joint1","leg1joint7"], scale = 0.25, use_default_offset=True)
     # joint_steer_pos_action = mdp.JointPositionActionCfg(asset_name="robot", joint_names=["leg1joint1","leg1joint7"], scale = 1.0, use_default_offset=True)
     # joint_bridge_pos_action = mdp.JointPositionToLimitsActionCfg(asset_name="robot", 
     #                                                              joint_names=["leg1joint[2-6]"], 
@@ -151,10 +151,10 @@ class ObservationsCfg:
             func=mdp.body_ang_vel,
             params = {"body_name": "leg1link4"}
         )
-        projected_gravity = ObsTerm(
-            func=mdp.projected_gravity,
-            # noise=Unoise(n_min=-0.05, n_max=0.05),
-        )
+        # projected_gravity = ObsTerm(
+        #     func=mdp.projected_gravity,
+        #     # noise=Unoise(n_min=-0.05, n_max=0.05),
+        # )
         joint_pos = ObsTerm(
             func=mdp.joint_pos_rel, 
             # noise=Unoise(n_min=-0.01, n_max=0.01)
@@ -265,12 +265,12 @@ class RewardsCfg:
     termination_penalty = RewTerm(func=mdp.is_terminated, weight=-1.0e4)
     lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_body_l2, weight=-100.0, params = {"body_names": ["leg1link4"]})
     lin_acc_l2 = RewTerm(func=mdp.lin_acc_body_l2, weight=-1e-2, params = {"body_names": ["leg1link4"]})
-    # ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.05)
+    ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.05)
     # dof_torques_l2 = RewTerm(func=mdp.joint_torques_vehicle_l2, weight=-2.5e-6)
     dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-1.0e-5)
     action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-1.0e-3)
     # Penalty for not being in vehicle configuration 
-    # joint_deviation_l1 = RewTerm(func=mdp.joint_deviation_vehicle_l1, weight = -1.0)
+    # joint_deviation_l1 = RewTerm(func=mdp.joint_deviation_vehicle_l1, weight = -10.0)
     # Penalty for wheel velocities being different
     # wheel_vel_deviation_front = RewTerm(func=mdp.wheel_vel_deviation_front, weight = -5e-6)
     # wheel_vel_deviation_rear = RewTerm(func=mdp.wheel_vel_deviation_rear, weight = -5e-6)

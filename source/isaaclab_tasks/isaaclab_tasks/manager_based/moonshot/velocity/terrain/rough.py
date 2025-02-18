@@ -14,8 +14,8 @@ from .terrain_generator_cfg import TerrainGeneratorCfg
 ROUGH_TERRAINS_CFG = TerrainGeneratorCfg(
     size=(10.0, 10.0),
     border_width=20.0,
-    num_rows=10,
-    num_cols=20,
+    num_rows=2, # 10
+    num_cols=2, # 20
     horizontal_scale=0.1,
     vertical_scale=0.005,
     slope_threshold=0.75,

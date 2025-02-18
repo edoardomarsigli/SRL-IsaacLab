@@ -243,27 +243,71 @@ def wheel_vel_deviation_rear(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg =
 def track_lin_vel_xy_exp_vehicle(
     env: ManagerBasedRLEnv, std: float, command_name: str, body_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
 ) -> torch.Tensor:
-    """Reward tracking of linear velocity commands (xy axes) using exponential kernel."""
+    """Reward tracking of linear velocity commands (xy axes) using exponential kernel of specific body.
+    Inspiration: https://git.ias.informatik.tu-darmstadt.de/cai/IsaacLab/-/blob/main/source/isaaclab_tasks/isaaclab_tasks/manager_based/locomotion/velocity/mdp/rewards.py
+    """
     # extract the used quantities (to enable type-hinting)
     asset: RigidObject = env.scene[asset_cfg.name]
     body_link_idx = asset.find_bodies(body_name)[0][0]
+    
+
+    # compute the velocity in the corrected frame (x = forwards, y = left, z = up)
+    target_quat = asset.data.body_quat_w[:, body_link_idx, :]
+    angle1 = torch.full((env.num_envs,), -math.pi/2, dtype=torch.float32, device = env.device)
+    axis1 = torch.tensor([[0, 1, 0]] * env.num_envs, dtype=torch.float32, device = env.device) 
+    correction_quat1 = math_utils.quat_from_angle_axis(angle1, axis1)
+    angle2 = torch.full((env.num_envs,), -math.pi/2, dtype=torch.float32, device = env.device)
+    axis2 = torch.tensor([[0, 0, 1]] * env.num_envs, dtype=torch.float32, device = env.device) 
+    correction_quat2 = math_utils.quat_from_angle_axis(angle2, axis2)
+    correction_quat = math_utils.quat_mul(correction_quat1,correction_quat2)
+    target_quat = math_utils.quat_mul(target_quat, correction_quat)
+
+    # body_lin_vel_t = math_utils.quat_rotate_inverse(
+    #     math_utils.yaw_quat(target_quat), asset.data.body_lin_vel_w[:, body_link_idx, :]
+    # )
+    body_lin_vel_t = math_utils.quat_rotate_inverse(
+        target_quat, asset.data.body_lin_vel_w[:, body_link_idx, :]
+    )
     # compute the error
     lin_vel_error = torch.sum(
-        torch.square(env.command_manager.get_command(command_name)[:, :2] - asset.data.body_lin_vel_w[:, body_link_idx, :2]),
+        torch.square(env.command_manager.get_command(command_name)[:, :2] - body_lin_vel_t[:, :2]),
         dim=1,
     )
     return torch.exp(-lin_vel_error / std**2)
 
 
-def track_ang_vel_z_exp_vehicle(
+def track_ang_vel_z_exp_vehicle(#
     env: ManagerBasedRLEnv, std: float, command_name: str, body_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
 ) -> torch.Tensor:
     """Reward tracking of angular velocity commands (yaw) using exponential kernel."""
     # extract the used quantities (to enable type-hinting)
     asset: RigidObject = env.scene[asset_cfg.name]
+    body_frame = env.scene["base_to_link4_transform"].data
     body_link_idx = asset.find_bodies(body_name)[0][0]
     # compute the error
-    ang_vel_error = torch.square(env.command_manager.get_command(command_name)[:, 2] - asset.data.body_ang_vel_w[:,body_link_idx, 2])
+    target_quat = asset.data.body_quat_w[:, body_link_idx, :]
+    # print("target_quat: ", target_quat[0,:])
+    # print("body_quat: ", asset.data.body_quat_w[0, body_link_idx, :])
+    
+    # angle1 = torch.full((env.num_envs,), -math.pi/2, dtype=torch.float32, device = env.device)
+    # axis1 = torch.tensor([[0, 1, 0]] * env.num_envs, dtype=torch.float32, device = env.device) 
+    # correction_quat1 = math_utils.quat_from_angle_axis(angle1, axis1)
+    # angle2 = torch.full((env.num_envs,), -math.pi/2, dtype=torch.float32, device = env.device)
+    # axis2 = torch.tensor([[0, 0, 1]] * env.num_envs, dtype=torch.float32, device = env.device) 
+    # correction_quat2 = math_utils.quat_from_angle_axis(angle2, axis2)
+    # correction_quat = math_utils.quat_mul(correction_quat2,correction_quat1)
+    # target_quat = math_utils.quat_mul(correction_quat, target_quat)
+
+
+    # body_ang_vel_t = math_utils.quat_apply_yaw(target_quat,
+    #                                         asset.data.body_ang_vel_w[:, body_link_idx, :]
+    # )
+    # body_ang_vel_t = math_utils.quat_apply(target_quat,
+    #                                     asset.data.body_ang_vel_w[:, body_link_idx, :]
+    # )
+    # ang_vel_error = torch.square(env.command_manager.get_command(command_name)[:, 2] - asset.data.body_ang_vel_w[:, body_link_idx ,2])
+    ang_vel_error = torch.square(env.command_manager.get_command(command_name)[:, 2] -asset.data.body_ang_vel_w[:, body_link_idx, 2])
+
     return torch.exp(-ang_vel_error / std**2)
 
 def lin_vel_z_body_l2(env: ManagerBasedRLEnv, body_names: list, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
@@ -321,3 +365,22 @@ def body_height_l2(
     # Compute the L2 squared penalty
     return torch.square(asset.data.body_pos_w[:,body_link_idx,2] - adjusted_target_height)
 
+def wheel_air_time(
+    env: ManagerBasedRLEnv, sensor_cfg: SceneEntityCfg,
+) -> torch.Tensor:
+    """Reward long steps taken by the feet using L2-kernel.
+
+    This function rewards the agent for taking steps that are longer than a threshold. This helps ensure
+    that the robot lifts its feet off the ground and takes steps. The reward is computed as the sum of
+    the time for which the feet are in the air.
+
+    If the commands are small (i.e. the agent is not supposed to take a step), then the reward is zero.
+    """
+    # extract the used quantities (to enable type-hinting)
+    contact_sensor: ContactSensor = env.scene.sensors[sensor_cfg.name]
+    # compute the reward
+    first_contact = contact_sensor.compute_first_contact(env.step_dt)[:, sensor_cfg.body_ids]
+    last_air_time = contact_sensor.data.last_air_time[:, sensor_cfg.body_ids]
+    reward = torch.sum((last_air_time) * first_contact, dim=1)
+    # no reward for zero command
+    return reward

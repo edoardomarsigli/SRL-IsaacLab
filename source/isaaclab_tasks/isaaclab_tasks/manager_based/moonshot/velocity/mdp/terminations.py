@@ -36,3 +36,14 @@ def root_roll_above_threshold(
     roll, _, _ = math_utils.euler_xyz_from_quat(quat)
 
     return torch.abs(math_utils.wrap_to_pi(roll)) > threshold
+
+def joint_vel_out_of_manual_limit_vehicle(
+    env: ManagerBasedRLEnv, max_velocity: float, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    """Terminate when the asset's joint velocities are outside the provided limits."""
+    # extract the used quantities (to enable type-hinting)
+    asset: Articulation = env.scene[asset_cfg.name]
+    body_joint_names = ["leg1joint[1-7]"] 
+    body_joint_idx =  [asset.find_joints(name)[0][0] for name in body_joint_names]
+    # compute any violations
+    return torch.any(torch.abs(asset.data.joint_vel[:, body_joint_idx]) > max_velocity, dim=1)
