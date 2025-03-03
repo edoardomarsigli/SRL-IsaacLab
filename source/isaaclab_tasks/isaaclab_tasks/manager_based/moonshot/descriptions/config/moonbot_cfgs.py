@@ -134,7 +134,7 @@ VEHICLE_CFG = ArticulationCfg(
 VEHICLE_ARTICULATED_CFG = ArticulationCfg(
     prim_path="{ENV_REGEX_NS}/Robot",
     spawn=sim_utils.UsdFileCfg(
-        usd_path=ISAAC_LAB_PATH + "/source/isaaclab_tasks/isaaclab_tasks/manager_based/moonshot/descriptions/usd/hero_vehicle_articulated/hero_vehicle.usd",
+        usd_path=ISAAC_LAB_PATH + "/source/isaaclab_tasks/isaaclab_tasks/manager_based/moonshot/descriptions/usd/hero_vehicle_12467/hero_vehicle.usd",
         activate_contact_sensors=True,
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             rigid_body_enabled=True,
@@ -166,8 +166,8 @@ VEHICLE_ARTICULATED_CFG = ArticulationCfg(
     actuators = {
         "leg_joints": ImplicitActuatorCfg(
             joint_names_expr=["leg1joint.*"],
-            effort_limit=136.11,
-            velocity_limit=0.05, # 0.145
+            effort_limit=36.11,
+            velocity_limit=0.145, # 0.145
             stiffness=1e6,
             damping=100,
         ),

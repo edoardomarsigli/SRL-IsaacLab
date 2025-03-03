@@ -165,12 +165,13 @@ def joint_deviation_vehicle_l1(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg
     # extract the used quantities (to enable type-hinting)
     asset: Articulation = env.scene[asset_cfg.name]
     # do not include the grippers revolute joints
-    joint_names = [f"leg1joint{i}" for i in range(4,5)] 
+    # joint_names = [f"leg1joint{i}" for i in range(2,7)]
+    joint_names = [f"leg1joint{i}" for i in [2,6]]  
     leg_joint_idx = [asset.find_joints(name)[0][0] for name in joint_names]
     vehicle_cfg_angles = asset.data.default_joint_pos[:, asset_cfg.joint_ids]
     
     vehicle_cfg_angles[:, leg_joint_idx[0]] = 0
-    # vehicle_cfg_angles[:, leg_joint_idx[1]] = 0
+    vehicle_cfg_angles[:, leg_joint_idx[1]] = 0 # math.pi/2
     # vehicle_cfg_angles[:, leg_joint_idx[2]] = 0 # math.pi/2
     # vehicle_cfg_angles[:, leg_joint_idx[3]] = 0
     # vehicle_cfg_angles[:, leg_joint_idx[4]] = 0
@@ -243,70 +244,66 @@ def wheel_vel_deviation_rear(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg =
 def track_lin_vel_xy_exp_vehicle(
     env: ManagerBasedRLEnv, std: float, command_name: str, body_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
 ) -> torch.Tensor:
-    """Reward tracking of linear velocity commands (xy axes) using exponential kernel of specific body.
-    Inspiration: https://git.ias.informatik.tu-darmstadt.de/cai/IsaacLab/-/blob/main/source/isaaclab_tasks/isaaclab_tasks/manager_based/locomotion/velocity/mdp/rewards.py
-    """
+    """Reward tracking of linear velocity commands (xy axes) using exponential kernel of specific body."""
     # extract the used quantities (to enable type-hinting)
     asset: RigidObject = env.scene[asset_cfg.name]
     body_link_idx = asset.find_bodies(body_name)[0][0]
+    body_lin_vel_w = asset.data.body_lin_vel_w[:, body_link_idx, :]
+    body_quat_w = asset.data.body_quat_w[:, body_link_idx, :]
+    if body_name == "leg1link2":
+        tf_d_matrix = torch.tensor([[-1,0,0],[0,0,1],[0,1,0]], device = env.device)
+        tf_d_matrix_expanded = tf_d_matrix.unsqueeze(0).expand(env.num_envs, -1, -1)
+        tf_d_quat = math_utils.quat_from_matrix(tf_d_matrix_expanded)
+    elif body_name == "leg1link4":
+        tf_d_matrix = torch.tensor([[0,0,-1],[-1,0,0],[0,1,0]], device = env.device)
+        tf_d_matrix_expanded = tf_d_matrix.unsqueeze(0).expand(env.num_envs, -1, -1)
+        tf_d_quat = math_utils.quat_from_matrix(tf_d_matrix_expanded)
+    else:
+        raise ValueError(f"Unexpected link name: {body_name}")
+
+    quat_w_d = math_utils.quat_mul(body_quat_w, tf_d_quat)
     
-
-    # compute the velocity in the corrected frame (x = forwards, y = left, z = up)
-    target_quat = asset.data.body_quat_w[:, body_link_idx, :]
-    angle1 = torch.full((env.num_envs,), -math.pi/2, dtype=torch.float32, device = env.device)
-    axis1 = torch.tensor([[0, 1, 0]] * env.num_envs, dtype=torch.float32, device = env.device) 
-    correction_quat1 = math_utils.quat_from_angle_axis(angle1, axis1)
-    angle2 = torch.full((env.num_envs,), -math.pi/2, dtype=torch.float32, device = env.device)
-    axis2 = torch.tensor([[0, 0, 1]] * env.num_envs, dtype=torch.float32, device = env.device) 
-    correction_quat2 = math_utils.quat_from_angle_axis(angle2, axis2)
-    correction_quat = math_utils.quat_mul(correction_quat1,correction_quat2)
-    target_quat = math_utils.quat_mul(target_quat, correction_quat)
-
-    # body_lin_vel_t = math_utils.quat_rotate_inverse(
-    #     math_utils.yaw_quat(target_quat), asset.data.body_lin_vel_w[:, body_link_idx, :]
-    # )
-    body_lin_vel_t = math_utils.quat_rotate_inverse(
-        target_quat, asset.data.body_lin_vel_w[:, body_link_idx, :]
+    body_lin_vel_d = math_utils.quat_rotate_inverse(
+        quat_w_d, body_lin_vel_w
     )
+
     # compute the error
     lin_vel_error = torch.sum(
-        torch.square(env.command_manager.get_command(command_name)[:, :2] - body_lin_vel_t[:, :2]),
+        torch.square(env.command_manager.get_command(command_name)[:, :2] - body_lin_vel_d[:, :2]),
         dim=1,
     )
+    
     return torch.exp(-lin_vel_error / std**2)
 
 
-def track_ang_vel_z_exp_vehicle(#
-    env: ManagerBasedRLEnv, std: float, command_name: str, body_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+def track_ang_vel_z_exp_vehicle(env: ManagerBasedRLEnv, std: float, command_name: str, body_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
 ) -> torch.Tensor:
     """Reward tracking of angular velocity commands (yaw) using exponential kernel."""
     # extract the used quantities (to enable type-hinting)
     asset: RigidObject = env.scene[asset_cfg.name]
-    body_frame = env.scene["base_to_link4_transform"].data
     body_link_idx = asset.find_bodies(body_name)[0][0]
-    # compute the error
-    target_quat = asset.data.body_quat_w[:, body_link_idx, :]
-    # print("target_quat: ", target_quat[0,:])
-    # print("body_quat: ", asset.data.body_quat_w[0, body_link_idx, :])
+    body_ang_vel_w = asset.data.body_ang_vel_w[:, body_link_idx, :]
+    body_quat_w = asset.data.body_quat_w[:, body_link_idx, :]
+    if body_name == "leg1link2":
+        tf_d_matrix = torch.tensor([[-1,0,0],[0,0,1],[0,1,0]], device = env.device)
+        tf_d_matrix_expanded = tf_d_matrix.unsqueeze(0).expand(env.num_envs, -1, -1)
+        tf_d_quat = math_utils.quat_from_matrix(tf_d_matrix_expanded)
+    elif body_name == "leg1link4":
+        tf_d_matrix = torch.tensor([[0,0,-1],[-1,0,0],[0,1,0]], device = env.device)
+        tf_d_matrix_expanded = tf_d_matrix.unsqueeze(0).expand(env.num_envs, -1, -1)
+        tf_d_quat = math_utils.quat_from_matrix(tf_d_matrix_expanded)
+    else:
+        raise ValueError(f"Unexpected link name: {body_name}")
     
-    # angle1 = torch.full((env.num_envs,), -math.pi/2, dtype=torch.float32, device = env.device)
-    # axis1 = torch.tensor([[0, 1, 0]] * env.num_envs, dtype=torch.float32, device = env.device) 
-    # correction_quat1 = math_utils.quat_from_angle_axis(angle1, axis1)
-    # angle2 = torch.full((env.num_envs,), -math.pi/2, dtype=torch.float32, device = env.device)
-    # axis2 = torch.tensor([[0, 0, 1]] * env.num_envs, dtype=torch.float32, device = env.device) 
-    # correction_quat2 = math_utils.quat_from_angle_axis(angle2, axis2)
-    # correction_quat = math_utils.quat_mul(correction_quat2,correction_quat1)
-    # target_quat = math_utils.quat_mul(correction_quat, target_quat)
+    quat_w_d = math_utils.quat_mul(body_quat_w, tf_d_quat)
+    
+    body_ang_vel_d = math_utils.quat_rotate_inverse(
+        quat_w_d, body_ang_vel_w
+    )
+    # compute the error
+    # ang_vel_error = torch.square(env.command_manager.get_command(command_name)[:, 2] - body_ang_vel_d[:, 2])
+    ang_vel_error = torch.square(env.command_manager.get_command(command_name)[:, 2] - body_ang_vel_w[:, 2])
 
-
-    # body_ang_vel_t = math_utils.quat_apply_yaw(target_quat,
-    #                                         asset.data.body_ang_vel_w[:, body_link_idx, :]
-    # )
-    # body_ang_vel_t = math_utils.quat_apply(target_quat,
-    #                                     asset.data.body_ang_vel_w[:, body_link_idx, :]
-    # )
-    # ang_vel_error = torch.square(env.command_manager.get_command(command_name)[:, 2] - asset.data.body_ang_vel_w[:, body_link_idx ,2])
-    ang_vel_error = torch.square(env.command_manager.get_command(command_name)[:, 2] -asset.data.body_ang_vel_w[:, body_link_idx, 2])
 
     return torch.exp(-ang_vel_error / std**2)
 
@@ -325,19 +322,19 @@ def joint_torques_vehicle_l2(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg =
     """
     # extract the used quantities (to enable type-hinting)
     asset: Articulation = env.scene[asset_cfg.name]
-    joint_names = [f"leg1joint{i}" for i in range(2,7)] 
+    joint_names = [f"leg1joint{i}" for i in [1,2,6,7]] 
     leg_joint_idx = [asset.find_joints(name)[0][0] for name in joint_names]
 
 
     return torch.sum(torch.square(asset.data.applied_torque[:, leg_joint_idx]), dim=1)
 
-def lin_acc_body_l2(env: ManagerBasedRLEnv, body_names: list, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+def lin_acc_body_l2(env: ManagerBasedRLEnv, body_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
     """Penalize linear acceleration of bodies using L2 squared kernel."""
     # extract the used quantities (to enable type-hinting)
     asset: Articulation = env.scene[asset_cfg.name]
-    body_link_idx = [asset.find_bodies(name)[0][0] for name in body_names]
+    body_link_idx = asset.find_bodies(body_name)[0][0]
 
-    return torch.sum(torch.norm(asset.data.body_lin_acc_w[:, body_link_idx, :], dim = -1), dim=1)
+    return torch.sum(torch.square(asset.data.body_lin_acc_w[:, body_link_idx, :]), dim=1)
 
 def body_height_l2(
     env: ManagerBasedRLEnv,
@@ -363,7 +360,7 @@ def body_height_l2(
         # Use the provided target height directly for flat terrain
         adjusted_target_height = target_height
     # Compute the L2 squared penalty
-    return torch.square(asset.data.body_pos_w[:,body_link_idx,2] - adjusted_target_height)
+    return torch.square(asset.data.body_pos_w[:,body_link_idx, 2] - adjusted_target_height)
 
 def wheel_air_time(
     env: ManagerBasedRLEnv, sensor_cfg: SceneEntityCfg,
@@ -384,3 +381,98 @@ def wheel_air_time(
     reward = torch.sum((last_air_time) * first_contact, dim=1)
     # no reward for zero command
     return reward
+
+def body_height_above_wheels_l2(
+    env: ManagerBasedRLEnv,
+    body_name: str,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Penalize asset height from its target using L2 squared kernel.
+
+    Note:
+        For flat terrain, target height is in the world frame. For rough terrain,
+        sensor readings can adjust the target height to account for the terrain.
+    """
+    # extract the used quantities (to enable type-hinting)
+    asset: RigidObject = env.scene[asset_cfg.name]
+    body_link_idx = asset.find_bodies(body_name)[0][0]
+    wheel_joint_names = ["wheel11_left","wheel11_right",
+                         "wheel12_left","wheel12_right"] 
+    wheel_joint_idx =  [asset.find_bodies(name)[0][0] for name in wheel_joint_names]
+    wheel_center_height = torch.mean(asset.data.body_pos_w[:, wheel_joint_idx, 2], dim = 1)
+    wheel_center_height = wheel_center_height + 0.15
+    body_height = asset.data.body_pos_w[:,body_link_idx, 2]
+    difference = wheel_center_height - body_height
+    # punish by square difference only if below 
+    result = torch.where(difference > 0, difference ** 2, torch.zeros_like(difference))
+
+    return result
+
+def upright_wheel_bodies(
+    env: ManagerBasedRLEnv,
+    std: float,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    # upright height difference (desired height difference)
+    target_height = 0.3786
+
+    # extract the used quantities (to enable type-hinting)
+    asset: RigidObject = env.scene[asset_cfg.name]
+    front_body_link_idx = asset.find_bodies("leg1link2")[0][0]
+    rear_body_link_idx = asset.find_bodies("leg1link6")[0][0]
+    wheel_joint_names = ["wheel11_left","wheel11_right",
+                         "wheel12_left","wheel12_right"] 
+    front_wheel_joint_idx =  [asset.find_bodies(name)[0][0] for name in wheel_joint_names[:2]]
+    front_wheel_center_height = torch.mean(asset.data.body_pos_w[:, front_wheel_joint_idx, 2], dim = 1)
+    front_body_height = asset.data.body_pos_w[:,front_body_link_idx, 2]
+    front_height_diff = front_body_height - front_wheel_center_height
+    front_deviation = front_height_diff - target_height
+    
+    rear_wheel_joint_idx =  [asset.find_bodies(name)[0][0] for name in wheel_joint_names[2:]]    
+    rear_wheel_center_height = torch.mean(asset.data.body_pos_w[:, rear_wheel_joint_idx, 2], dim = 1)    
+    rear_body_height = asset.data.body_pos_w[:,rear_body_link_idx, 2]
+    rear_height_diff = rear_body_height - rear_wheel_center_height
+    rear_deviation = rear_height_diff - target_height
+
+    error = torch.abs(front_deviation) + torch.abs(rear_deviation)
+
+    return torch.exp(-error / std**2)
+
+def upright_wheel_bodies_angle(
+    env: ManagerBasedRLEnv,
+    std: float,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    # upright height difference (desired height difference)
+
+    # extract the used quantities (to enable type-hinting)
+    asset: RigidObject = env.scene[asset_cfg.name]
+    front_body_link_idx = asset.find_bodies("leg1link2")[0][0]
+    rear_body_link_idx = asset.find_bodies("leg1link6")[0][0]
+    wheel_joint_names = ["wheel11_left","wheel11_right",
+                         "wheel12_left","wheel12_right"] 
+    front_wheel_joint_idx =  [asset.find_bodies(name)[0][0] for name in wheel_joint_names[:2]]
+    front_wheel_center = torch.mean(asset.data.body_pos_w[:, front_wheel_joint_idx, :], dim = 1)
+    front_body = asset.data.body_pos_w[:,front_body_link_idx, :]
+    front_diff = front_body - front_wheel_center
+    front_diff_norm = torch.norm(front_diff,dim=1, keepdim=True)
+    # avoid division by 0
+    epsilon = 1e-8
+    front_diff_normalized = front_diff / (front_diff_norm + epsilon)
+    front_z = front_diff_normalized[:, 2]
+    front_angles = torch.acos(torch.clamp(front_z, -1.0, 1.0))
+    
+    rear_wheel_joint_idx =  [asset.find_bodies(name)[0][0] for name in wheel_joint_names[2:]]    
+    rear_wheel_center = torch.mean(asset.data.body_pos_w[:, rear_wheel_joint_idx, :], dim = 1)
+    rear_body = asset.data.body_pos_w[:,rear_body_link_idx, :]
+    rear_diff = rear_body - rear_wheel_center
+    rear_diff_norm = torch.norm(rear_diff,dim=1, keepdim=True)
+    # avoid division by 0
+    epsilon = 1e-8
+    rear_diff_normalized = rear_diff / (rear_diff_norm + epsilon)
+    rear_z = rear_diff_normalized[:, 2]
+    rear_angles = torch.acos(torch.clamp(rear_z, -1.0, 1.0))
+
+    error = torch.abs(front_angles) + torch.abs(rear_angles)
+    return error
+    return torch.exp(-error / std**2)

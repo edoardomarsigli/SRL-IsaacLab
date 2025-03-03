@@ -72,7 +72,8 @@ def reset_joints_by_offset_steering_joints(
     asset: Articulation = env.scene[asset_cfg.name]
     steering_joint_names = ["leg1joint1","leg1joint7"]
     steering_joint_idx = [asset.find_joints(name)[0][0] for name in steering_joint_names]
-    
+    # middle_joint_idx = asset.find_joints("leg1joint4")[0][0]
+
     # get default joint state
     joint_pos = asset.data.default_joint_pos[env_ids].clone()
     joint_vel = asset.data.default_joint_vel[env_ids].clone()
@@ -85,6 +86,8 @@ def reset_joints_by_offset_steering_joints(
     joint_pos[:, steering_joint_idx] += pos_offset
     joint_vel[:, steering_joint_idx] += vel_offset
     
+    # joint_pos[:, middle_joint_idx] += math.pi/2
+
     # clamp joint pos to limits
     joint_pos_limits = asset.data.soft_joint_pos_limits[env_ids]
     joint_pos = joint_pos.clamp_(joint_pos_limits[..., 0], joint_pos_limits[..., 1])

@@ -74,7 +74,7 @@ class UniformBodyVelocityCommand(CommandTerm):
         # obtain the robot asset
         # -- robot
         self.robot: Articulation = env.scene[cfg.asset_name]
-        self.body_frame = env.scene["base_to_link4_transform"].data
+        
         # crete buffers to store the command
         # -- command: x vel, y vel, yaw vel, heading
         self.vel_command_b = torch.zeros(self.num_envs, 3, device=self.device)
@@ -110,42 +110,65 @@ class UniformBodyVelocityCommand(CommandTerm):
     Implementation specific functions.
     """
 
+    def _get_body_vel_d(self, body_vel_w):
+        # calculates velocity of body in desired (d) frame (x = forwards, y = left, z = up)
+        body_quat_w = self.robot.data.body_quat_w[:, self.body_link_idx, :]
+        if self.cfg.body_name == "leg1link2":
+            tf_d_matrix = torch.tensor([[-1,0,0],[0,0,1],[0,1,0]], device = self.device)
+            tf_d_matrix_expanded = tf_d_matrix.unsqueeze(0).expand(self.num_envs, -1, -1)
+            tf_d_quat = math_utils.quat_from_matrix(tf_d_matrix_expanded)
+        elif self.cfg.body_name == "leg1link4":
+            tf_d_matrix = torch.tensor([[0,0,-1],[-1,0,0],[0,1,0]], device = self.device)
+            tf_d_matrix_expanded = tf_d_matrix.unsqueeze(0).expand(self.num_envs, -1, -1)
+            tf_d_quat = math_utils.quat_from_matrix(tf_d_matrix_expanded)      
+        else:
+            raise ValueError(f"Unexpected link name: {self.cfg.body_name}")
+        
+        quat_w_d = math_utils.quat_mul(body_quat_w, tf_d_quat)
+        
+        body_vel_d = math_utils.quat_rotate_inverse(
+            quat_w_d, body_vel_w
+        )
+
+        return body_vel_d
+
+    def _get_body_quat_d(self):
+        # calculates quat from world (w) to desired (d) frame
+        body_quat_w = self.robot.data.body_quat_w[:, self.body_link_idx, :]
+        
+        if self.cfg.body_name == "leg1link2":
+            tf_d_matrix = torch.tensor([[-1,0,0],[0,0,1],[0,1,0]], device = self.device)
+            tf_d_matrix_expanded = tf_d_matrix.unsqueeze(0).expand(self.num_envs, -1, -1)
+            tf_d_quat = math_utils.quat_from_matrix(tf_d_matrix_expanded)
+        elif self.cfg.body_name == "leg1link4":
+            tf_d_matrix = torch.tensor([[0,0,-1],[-1,0,0],[0,1,0]], device = self.device)
+            tf_d_matrix_expanded = tf_d_matrix.unsqueeze(0).expand(self.num_envs, -1, -1)
+            tf_d_quat = math_utils.quat_from_matrix(tf_d_matrix_expanded)
+        else:
+            raise ValueError(f"Unexpected link name: {self.cfg.body_name}")
+        
+        quat_w_d = math_utils.quat_mul(body_quat_w, tf_d_quat)
+
+        return quat_w_d
+
     def _update_metrics(self):
         # time for which the command was executed
         max_command_time = self.cfg.resampling_time_range[1]
         max_command_step = max_command_time / self._env.step_dt
         # logs data
-        # angle1 = torch.full((self.num_envs,), -math.pi/2, dtype=torch.float32, device = self.device)
-        # axis1 = torch.tensor([[0, 1, 0]] * self.num_envs, dtype=torch.float32, device = self.device) 
-        # correction_quat1 = math_utils.quat_from_angle_axis(angle1, axis1)
-        # angle2 = torch.full((self.num_envs,), -math.pi/2, dtype=torch.float32, device = self.device)
-        # axis2 = torch.tensor([[0, 0, 1]] * self.num_envs, dtype=torch.float32, device = self.device) 
-        # correction_quat2 = math_utils.quat_from_angle_axis(angle2, axis2)
-        # correction_quat = math_utils.quat_mul(correction_quat1,correction_quat2)
+        body_lin_vel_d = self._get_body_vel_d(self.robot.data.body_lin_vel_w[:, self.body_link_idx, :])
+        body_ang_vel_d = self._get_body_vel_d(self.robot.data.body_ang_vel_w[:, self.body_link_idx, :])
 
-        # body_lin_vel_b = math_utils.quat_rotate_inverse(self.robot.data.body_quat_w[:, self.body_link_idx, :],
-        #                                                 self.robot.data.body_lin_vel_w[:, self.body_link_idx, :]
-        # )
-        # body_lin_vel_t = math_utils.quat_rotate(correction_quat, body_lin_vel_b)
-
-        # body_ang_vel_b = math_utils.quat_rotate_inverse(self.robot.data.body_quat_w[:, self.body_link_idx, :],
-        #                                                 self.robot.data.body_ang_vel_w[:, self.body_link_idx, :]
-        # )
-        # body_ang_vel_t = math_utils.quat_rotate(correction_quat, body_ang_vel_b)
-
-
-        # self.metrics["error_vel_xy"] += (
-        #     torch.norm(self.vel_command_b[:, :2] - body_lin_vel_t[:, :2], dim=-1) / max_command_step
-        # )
-        # self.metrics["error_vel_yaw"] += (
-        #     torch.abs(self.vel_command_b[:, 2] - body_ang_vel_t[:, 2]) / max_command_step
-        # )
         self.metrics["error_vel_xy"] += (
-            torch.norm(self.vel_command_b[:, :2] - self.robot.data.body_lin_vel_w[:,self.body_link_idx, :2], dim=-1) / max_command_step
+            torch.norm(self.vel_command_b[:, :2] - body_lin_vel_d[:, :2], dim=-1) / max_command_step
         )
+        # self.metrics["error_vel_yaw"] += (
+        #     torch.abs(self.vel_command_b[:, 2] - body_ang_vel_d[:, 2]) / max_command_step
+        # )
         self.metrics["error_vel_yaw"] += (
-            torch.abs(self.vel_command_b[:, 2] - self.robot.data.body_ang_vel_w[:,self.body_link_idx, 2]) / max_command_step
+            torch.abs(self.vel_command_b[:, 2] - self.robot.data.body_ang_vel_w[:, self.body_link_idx, 2]) / max_command_step
         )
+
     def _resample_command(self, env_ids: Sequence[int]):
         # sample velocity commands
         r = torch.empty(len(env_ids), device=self.device)
@@ -175,7 +198,7 @@ class UniformBodyVelocityCommand(CommandTerm):
             # resolve indices of heading envs
             env_ids = self.is_heading_env.nonzero(as_tuple=False).flatten()
             # compute angular velocity
-            heading_error = math_utils.wrap_to_pi(self.heading_target[env_ids] - math_utils.euler_xyz_from_quat(self.robot.data.body_quat_w[:,self.body_link_idx,:])[2][env_ids])
+            heading_error = math_utils.wrap_to_pi(self.heading_target[env_ids] - math_utils.euler_xyz_from_quat(self._get_body_quat_d())[2][env_ids])
             self.vel_command_b[env_ids, 2] = torch.clip(
                 self.cfg.heading_control_stiffness * heading_error,
                 min=self.cfg.ranges.ang_vel_z[0],
@@ -211,38 +234,20 @@ class UniformBodyVelocityCommand(CommandTerm):
             return
         # get marker location
         # -- base state
-        base_pos_w = self.robot.data.body_pos_w[:,self.body_link_idx,:].clone()
-        base_pos_w[:, 2] += 0.5
+        body_pos_w = self.robot.data.body_pos_w[:,self.body_link_idx,:].clone()
+        body_pos_w[:, 2] += 0.5
         # -- resolve the scales and quaternions
-
-        vel_des_arrow_scale, vel_des_arrow_quat = self._resolve_xy_velocity_to_arrow(self.command[:, :2], command=True)
-
-        # angle1 = torch.full((self.num_envs,), -math.pi/2, dtype=torch.float32, device = self.device)
-        # axis1 = torch.tensor([[0, 1, 0]] * self.num_envs, dtype=torch.float32, device = self.device) 
-        # correction_quat1 = math_utils.quat_from_angle_axis(angle1, axis1)
-        # angle2 = torch.full((self.num_envs,), -math.pi/2, dtype=torch.float32, device = self.device)
-        # axis2 = torch.tensor([[0, 0, 1]] * self.num_envs, dtype=torch.float32, device = self.device) 
-        # correction_quat2 = math_utils.quat_from_angle_axis(angle2, axis2)
-        # correction_quat = math_utils.quat_mul(correction_quat1,correction_quat2)
-
-        # body_lin_vel_b = math_utils.quat_rotate_inverse(self.robot.data.body_quat_w[:, self.body_link_idx, :],
-        #                                                 self.robot.data.body_lin_vel_w[:, self.body_link_idx, :]
-        # )
-        # body_lin_vel_t = math_utils.quat_rotate(correction_quat, body_lin_vel_b)
-
-        # body_lin_vel_xy = body_lin_vel_t[:, :2]
-        body_lin_vel_xy = self.robot.data.body_lin_vel_w[:, self.body_link_idx, :2]
-
-        vel_arrow_scale, vel_arrow_quat = self._resolve_xy_velocity_to_arrow(body_lin_vel_xy, command = False)
+        vel_des_arrow_scale, vel_des_arrow_quat = self._resolve_xy_velocity_to_arrow(self.command[:, :2])
+        vel_arrow_scale, vel_arrow_quat = self._resolve_xy_velocity_to_arrow(self._get_body_vel_d(self.robot.data.body_lin_vel_w[:, self.body_link_idx, :])[:, :2])
         # display markers
-        self.goal_vel_visualizer.visualize(base_pos_w, vel_des_arrow_quat, vel_des_arrow_scale)
-        self.current_vel_visualizer.visualize(base_pos_w, vel_arrow_quat, vel_arrow_scale)
+        self.goal_vel_visualizer.visualize(body_pos_w, vel_des_arrow_quat, vel_des_arrow_scale)
+        self.current_vel_visualizer.visualize(body_pos_w, vel_arrow_quat, vel_arrow_scale)
 
     """
     Internal helpers.
     """
 
-    def _resolve_xy_velocity_to_arrow(self, xy_velocity: torch.Tensor, command: bool) -> tuple[torch.Tensor, torch.Tensor]:
+    def _resolve_xy_velocity_to_arrow(self, xy_velocity: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Converts the XY base velocity command to arrow direction rotation."""
         # obtain default scale of the marker
         default_scale = self.goal_vel_visualizer.cfg.markers["arrow"].scale
@@ -254,19 +259,7 @@ class UniformBodyVelocityCommand(CommandTerm):
         zeros = torch.zeros_like(heading_angle)
         arrow_quat = math_utils.quat_from_euler_xyz(zeros, zeros, heading_angle)
         # convert everything back from base to world frame
-        # base_quat_w = self.robot.data.body_quat_w[:,self.body_link_idx,:]
-        # arrow_quat = math_utils.quat_mul(base_quat_w, arrow_quat)
-        if command == True:
-            target_quat = self.body_frame.target_quat_w[:,0,:]
-            # correction quat is due to orientation of target_quat being different compared to forward direction
-            angle1 = torch.full((self.num_envs,), -math.pi/2, dtype=torch.float32, device = self.device)
-            axis1 = torch.tensor([[0, 1, 0]] * self.num_envs, dtype=torch.float32, device = self.device) 
-            correction_quat1 = math_utils.quat_from_angle_axis(angle1, axis1)
-            angle2 = torch.full((self.num_envs,), -math.pi/2, dtype=torch.float32, device = self.device)
-            axis2 = torch.tensor([[0, 0, 1]] * self.num_envs, dtype=torch.float32, device = self.device) 
-            correction_quat2 = math_utils.quat_from_angle_axis(angle2, axis2)
-            correction_quat = math_utils.quat_mul(correction_quat1,correction_quat2)
-            target_quat = math_utils.quat_mul(target_quat, correction_quat)
-            arrow_quat = math_utils.quat_mul(target_quat, arrow_quat)
-
+        body_quat_d = self._get_body_quat_d()
+        # body_quat_w = self.robot.data.body_quat_w[:, self.body_link_idx, :]
+        arrow_quat = math_utils.quat_mul(body_quat_d, arrow_quat)
         return arrow_scale, arrow_quat
