@@ -23,8 +23,10 @@ from isaaclab.sensors import ContactSensorCfg, RayCasterCfg, patterns, FrameTran
 from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
 
 import isaaclab_tasks.manager_based.moonshot.velocity.mdp as mdp
+import isaaclab_tasks.manager_based.moonshot.utils as moonshot_utils
 
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR
+ISAAC_LAB_PATH = moonshot_utils.find_isaaclab_path().replace("\\","/") #  
 ##
 # Pre-defined configs
 ##
@@ -55,23 +57,38 @@ class MySceneCfg(InteractiveSceneCfg):
     #     debug_vis=False,
     # )
     # terrain (rough)
+    # terrain = TerrainImporterCfg(
+    #     prim_path="/World/ground",
+    #     terrain_type="generator",
+    #     terrain_generator=ROUGH_TERRAINS_CFG,
+    #     max_init_terrain_level=5,
+    #     collision_group=-1,
+    #     physics_material=sim_utils.RigidBodyMaterialCfg(
+    #         friction_combine_mode="multiply",
+    #         restitution_combine_mode="multiply",
+    #         static_friction=1.0,
+    #         dynamic_friction=1.0,
+    #     ),
+    #     visual_material=sim_utils.MdlFileCfg(
+    #         mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
+    #         project_uvw=True,
+    #         texture_scale=(0.25, 0.25),
+    #     ),
+    #     debug_vis=False,
+    # )
+    # terrain (custom usd)
     terrain = TerrainImporterCfg(
         prim_path="/World/ground",
-        terrain_type="generator",
-        terrain_generator=ROUGH_TERRAINS_CFG,
-        max_init_terrain_level=5,
+        terrain_type="usd",
+        usd_path = ISAAC_LAB_PATH + "/source/isaaclab_tasks/isaaclab_tasks/manager_based/moonshot/descriptions/usd/terrain/sagamihara_v2.usd",
         collision_group=-1,
-        physics_material=sim_utils.RigidBodyMaterialCfg(
-            friction_combine_mode="multiply",
-            restitution_combine_mode="multiply",
-            static_friction=1.0,
-            dynamic_friction=1.0,
-        ),
-        visual_material=sim_utils.MdlFileCfg(
-            mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
-            project_uvw=True,
-            texture_scale=(0.25, 0.25),
-        ),
+        # physics_material=sim_utils.RigidBodyMaterialCfg(
+        #     friction_combine_mode="average",
+        #     restitution_combine_mode="average",
+        #     static_friction=1.0,
+        #     dynamic_friction=1.0,
+        #     restitution=0.0,
+        # ),
         debug_vis=False,
     )
     # robot
@@ -119,18 +136,18 @@ class CommandsCfg:
     body_velocity = mdp.UniformBodyVelocityCommandCfg(
         asset_name="robot",
         body_name=BASE_NAME,
-        resampling_time_range=(10, 10),
+        resampling_time_range=(5, 15),
         rel_standing_envs=0.02,
         rel_heading_envs=1.0,
         heading_command=False,
         heading_control_stiffness=0.5,
         debug_vis=True,
         ranges=mdp.UniformBodyVelocityCommandCfg.Ranges(
-            lin_vel_x=(-0.12, 0.12), 
-            lin_vel_y=(-0.12, 0.12), 
-            ang_vel_z=(-math.pi/12, math.pi/12), 
+            lin_vel_x=(0.12, 0.12), 
+            # lin_vel_y=(-0.12, 0.12), 
+            ang_vel_z=(-math.pi/12, -math.pi/12), 
             # lin_vel_x=(0.12, 0.12),
-            # lin_vel_y=(-0.0, 0.0),
+            lin_vel_y=(-0.0, 0.0),
             # ang_vel_z=(0, 0), 
             heading=(-math.pi, math.pi)
         ),
@@ -180,16 +197,16 @@ class ObservationsCfg:
         #     noise = Unoise(n_min=-0.01, n_max=0.01),
         #     params = {"body_name": "leg1gripper2_base"}
         # )
-        body_lin_vel = ObsTerm(
-            func=mdp.body_lin_vel,
-            noise = Unoise(n_min=-0.01, n_max=0.01),
-            params = {"body_name": BASE_NAME}
-        )
-        body_ang_vel = ObsTerm(
-            func=mdp.body_ang_vel,
-            noise = Unoise(n_min=-0.01, n_max=0.01),
-            params = {"body_name": BASE_NAME}
-        )
+        # body_lin_vel = ObsTerm(
+        #     func=mdp.body_lin_vel,
+        #     noise = Unoise(n_min=-0.01, n_max=0.01),
+        #     params = {"body_name": BASE_NAME}
+        # )
+        # body_ang_vel = ObsTerm(
+        #     func=mdp.body_ang_vel,
+        #     noise = Unoise(n_min=-0.01, n_max=0.01),
+        #     params = {"body_name": BASE_NAME}
+        # )
         joint_pos = ObsTerm(
             func=mdp.joint_pos_rel, 
             noise=Unoise(n_min=-0.01, n_max=0.01)
@@ -255,7 +272,8 @@ class EventCfg:
         func=mdp.reset_joints_by_offset_steering_joints,
         mode="reset",
         params={
-            "position_range": (-math.pi/4, math.pi/4),
+            # "position_range": (-math.pi/6, math.pi/6),
+            "position_range": (-0.0, 0.0),
             "velocity_range": (0.0, 0.0),
         },
     )
@@ -265,8 +283,8 @@ class EventCfg:
         mode="startup",
         params={
             "asset_cfg": SceneEntityCfg("robot", body_names="wheel.*"),
-            "static_friction_range": (0.4, 1.0),
-            "dynamic_friction_range": (0.2, 0.8),
+            "static_friction_range": (0.8, 0.8),
+            "dynamic_friction_range": (0.6, 0.6),
             "restitution_range": (0.0, 0.0),
             "num_buckets": 64,
         },
@@ -367,7 +385,7 @@ class VehicleEnvCfg(ManagerBasedRLEnvCfg):
     rewards: RewardsCfg = RewardsCfg()
     terminations: TerminationsCfg = TerminationsCfg()
     events: EventCfg = EventCfg()
-    curriculum: CurriculumCfg = CurriculumCfg()
+    # curriculum: CurriculumCfg = CurriculumCfg()
 
     def __post_init__(self):
         """Post initialization."""
