@@ -1,5 +1,5 @@
 # Moonshot Manager Based Tasks for the various configurations 
 
-from .navigation import *
-from .velocity import *
+from .locomotion import *
 from .descriptions import *
+from .utils import *
