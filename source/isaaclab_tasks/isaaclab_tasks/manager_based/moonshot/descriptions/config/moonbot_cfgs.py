@@ -134,7 +134,7 @@ VEHICLE_CFG = ArticulationCfg(
 VEHICLE_ARTICULATED_CFG = ArticulationCfg(
     prim_path="{ENV_REGEX_NS}/Robot",
     spawn=sim_utils.UsdFileCfg(
-        usd_path=ISAAC_LAB_PATH + "/source/isaaclab_tasks/isaaclab_tasks/manager_based/moonshot/descriptions/usd/hero_vehicle/hero_vehicle_1267/hero_vehicle.usd",
+        usd_path=ISAAC_LAB_PATH + "/source/isaaclab_tasks/isaaclab_tasks/manager_based/moonshot/descriptions/usd/hero_vehicle_1267/hero_vehicle.usd",
         activate_contact_sensors=True,
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             rigid_body_enabled=True,
@@ -154,6 +154,7 @@ VEHICLE_ARTICULATED_CFG = ArticulationCfg(
     ),
     init_state=ArticulationCfg.InitialStateCfg(
     pos=(0.0, 0.0, 0.30),
+    # pos=(-1.0, -5.0, 0.30),
     joint_pos = {".*": 0.0}
     ),
     # joint_pos={"wheel.*": 0.0,

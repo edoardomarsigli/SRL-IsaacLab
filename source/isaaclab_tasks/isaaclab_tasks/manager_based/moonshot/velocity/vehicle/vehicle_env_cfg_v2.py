@@ -76,11 +76,11 @@ class MySceneCfg(InteractiveSceneCfg):
     #     ),
     #     debug_vis=False,
     # )
-    # terrain (custom usd)
+    # terrain (moon terrain)
     terrain = TerrainImporterCfg(
         prim_path="/World/ground",
         terrain_type="usd",
-        usd_path = ISAAC_LAB_PATH + "/source/isaaclab_tasks/isaaclab_tasks/manager_based/moonshot/descriptions/usd/terrain/sagamihara_v2.usd",
+        usd_path = ISAAC_LAB_PATH + "/source/isaaclab_tasks/isaaclab_tasks/manager_based/moonshot/descriptions/usd/terrain/petavius_crater.usd",
         collision_group=-1,
         # physics_material=sim_utils.RigidBodyMaterialCfg(
         #     friction_combine_mode="average",
@@ -119,10 +119,17 @@ class MySceneCfg(InteractiveSceneCfg):
     # )
 
     # lights
+    # light = AssetBaseCfg(
+        # prim_path="/World/light",
+        # spawn=sim_utils.DistantLightCfg(color=(0.75, 0.75, 0.75), intensity=3000.0),
+    # )
+    # lights (moon terrain)
     light = AssetBaseCfg(
         prim_path="/World/light",
-        spawn=sim_utils.DistantLightCfg(color=(0.75, 0.75, 0.75), intensity=3000.0),
+        spawn=sim_utils.DistantLightCfg(color=(0.75, 0.75, 0.75), intensity=15000.0),
+        init_state=AssetBaseCfg.InitialStateCfg(rot = (0.52133, 0.47771, 0.47771, 0.52133))
     )
+
 
 ##
 # MDP settings
@@ -143,12 +150,12 @@ class CommandsCfg:
         heading_control_stiffness=0.5,
         debug_vis=True,
         ranges=mdp.UniformBodyVelocityCommandCfg.Ranges(
-            lin_vel_x=(0.12, 0.12), 
+            # lin_vel_x=(-0.12, 0.12), 
             # lin_vel_y=(-0.12, 0.12), 
-            ang_vel_z=(-math.pi/12, -math.pi/12), 
-            # lin_vel_x=(0.12, 0.12),
+            # ang_vel_z=(-math.pi/12, math.pi/12), 
+            lin_vel_x=(0.12, 0.12),
             lin_vel_y=(-0.0, 0.0),
-            # ang_vel_z=(0, 0), 
+            ang_vel_z=(0, 0), 
             heading=(-math.pi, math.pi)
         ),
     )
@@ -197,16 +204,16 @@ class ObservationsCfg:
         #     noise = Unoise(n_min=-0.01, n_max=0.01),
         #     params = {"body_name": "leg1gripper2_base"}
         # )
-        # body_lin_vel = ObsTerm(
-        #     func=mdp.body_lin_vel,
-        #     noise = Unoise(n_min=-0.01, n_max=0.01),
-        #     params = {"body_name": BASE_NAME}
-        # )
-        # body_ang_vel = ObsTerm(
-        #     func=mdp.body_ang_vel,
-        #     noise = Unoise(n_min=-0.01, n_max=0.01),
-        #     params = {"body_name": BASE_NAME}
-        # )
+        body_lin_vel = ObsTerm(
+            func=mdp.body_lin_vel,
+            noise = Unoise(n_min=-0.01, n_max=0.01),
+            params = {"body_name": BASE_NAME}
+        )
+        body_ang_vel = ObsTerm(
+            func=mdp.body_ang_vel,
+            noise = Unoise(n_min=-0.01, n_max=0.01),
+            params = {"body_name": BASE_NAME}
+        )
         joint_pos = ObsTerm(
             func=mdp.joint_pos_rel, 
             noise=Unoise(n_min=-0.01, n_max=0.01)
@@ -272,8 +279,8 @@ class EventCfg:
         func=mdp.reset_joints_by_offset_steering_joints,
         mode="reset",
         params={
-            # "position_range": (-math.pi/6, math.pi/6),
-            "position_range": (-0.0, 0.0),
+            "position_range": (-math.pi/6, math.pi/6),
+            # "position_range": (-0.0, 0.0),
             "velocity_range": (0.0, 0.0),
         },
     )
@@ -376,7 +383,7 @@ class VehicleEnvCfg(ManagerBasedRLEnvCfg):
     """Configuration for Moonshot Wheel Module environment."""
 
     # Scene settings
-    scene: MySceneCfg = MySceneCfg(num_envs=4096, env_spacing=2.5)
+    scene: MySceneCfg = MySceneCfg(num_envs=4096, env_spacing=7.5)
     # Basic settings
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()
@@ -393,7 +400,9 @@ class VehicleEnvCfg(ManagerBasedRLEnvCfg):
         self.decimation = 4
         self.episode_length_s = 20.0
         # simulation settings
-        self.viewer.eye = (3.5, 3.5, 3.5)
+        self.viewer.eye = (3.5,3.5,3.5) 
+        # self.viewer.eye = (8.0, 8.0, 4.5) # use this for moon scene
+        # self.viewer.resolution = (2540,1440) # uncomment when you want to export video
         self.sim.dt = 0.005
         self.sim.render_interval = self.decimation
         self.sim.disable_contact_processing = True
