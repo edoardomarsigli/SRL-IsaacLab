@@ -316,15 +316,23 @@ def lin_vel_z_body_l2(env: ManagerBasedRLEnv, body_names: list, asset_cfg: Scene
     return torch.sum(torch.square(asset.data.body_lin_vel_w[:, body_link_idx, 2]), dim=1)
 
 def joint_torques_vehicle_l2(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
-    """Penalize joint torques applied on the articulation using L2 squared kernel.
+    """Penalize leg joint torques applied on the articulation using L2 squared kernel.
 
-    NOTE: Only the joints configured in :attr:`asset_cfg.joint_ids` will have their joint torques contribute to the term.
+    Excludes any wheel joint torques.
     """
-    # extract the used quantities (to enable type-hinting)
     asset: Articulation = env.scene[asset_cfg.name]
-    joint_names = [f"leg1joint{i}" for i in [1,2,6,7]] 
-    leg_joint_idx = [asset.find_joints(name)[0][0] for name in joint_names]
+    all_joint_indices = range(len(asset.joint_names))
+    
+    wheel_joint_names = [
+        "wheel11_left_joint",
+        "wheel11_right_joint",
+        "wheel12_left_joint",
+        "wheel12_right_joint",
+    ] 
 
+    wheel_joint_idx = {asset.find_joints(name)[0][0] for name in wheel_joint_names}
+    # if not a wheel joint, then it's a leg joint, which makes it applicable for any number of leg joints
+    leg_joint_idx = [idx for idx in all_joint_indices if idx not in wheel_joint_idx]
 
     return torch.sum(torch.square(asset.data.applied_torque[:, leg_joint_idx]), dim=1)
 

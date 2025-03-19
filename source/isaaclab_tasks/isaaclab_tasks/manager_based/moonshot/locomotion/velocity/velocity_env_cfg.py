@@ -251,8 +251,6 @@ class RewardsCfg:
     )
     # -- penalties
     termination_penalty = RewTerm(func=mdp.is_terminated, weight=-400)
-    # lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_body_l2, weight=-10.0, params = {"body_names": [BASE_NAME ]})
-    # lin_acc_l2 = RewTerm(func=mdp.lin_acc_l2, weight=-1e-2)
     ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.05)
     dof_torques_l2 = RewTerm(func=mdp.joint_torques_vehicle_l2, weight=-1.0e-4)
     dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-7)
@@ -264,14 +262,6 @@ class RewardsCfg:
         weight = -1.0,
         params = {"std": 0.25}
     )
-    # body_above_wheels = RewTerm(
-    #     func=mdp.body_height_above_wheels_l2,
-    #     weight=-10.0,
-    #     params={"body_name": "leg1link4"}
-    # )
-    # Penalty for not being in vehicle configuration 
-    # joint_deviation_l1 = RewTerm(func=mdp.joint_deviation_vehicle_l1, weight = -0.2)
-
 
 @configclass
 class TerminationsCfg:

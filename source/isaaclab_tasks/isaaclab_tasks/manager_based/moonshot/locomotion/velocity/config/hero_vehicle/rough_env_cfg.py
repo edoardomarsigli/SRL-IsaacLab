@@ -39,11 +39,13 @@ class HeroVehicleRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
 
         # commands
         self.commands.body_velocity.body_name = BASE_NAME
-
+        self.commands.body_velocity.ranges.lin_vel_x = (-0.1,0.1)
+        self.commands.body_velocity.ranges.lin_vel_y = (-0.1,0.1)
+        
         # observations
         self.observations.policy.body_lin_vel.params["body_name"] = BASE_NAME
         self.observations.policy.body_ang_vel.params["body_name"] = BASE_NAME
-
+        
         # event
         self.events.push_robot = None
         self.events.add_base_mass = None
@@ -72,7 +74,8 @@ class HeroVehicleRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
         self.terminations.base_contact.params["sensor_cfg"].body_names = "leg1link.*"
 
         # curriculum
-        self.curriculum.terrain_levels.params["body_name"] = BASE_NAME
+        self.curriculum.terrain_levels = None
+        # self.curriculum.terrain_levels.params["body_name"] = BASE_NAME
 
         # wheel only mode toggle in case of no position controlled leg joints
         if WHEEL_ONLY_MODE:
@@ -97,6 +100,9 @@ class HeroVehicleRoughEnvCfg_PLAY(HeroVehicleRoughEnvCfg):
             self.scene.terrain.terrain_generator.num_cols = 5
             self.scene.terrain.terrain_generator.curriculum = False
 
+        self.commands.body_velocity.ranges.lin_vel_x = (0.12, 0.12)
+        self.commands.body_velocity.ranges.lin_vel_y = (0.0, 0.0)
+        self.commands.body_velocity.ranges.ang_vel_z = (0.0, 0.0)
         # disable randomization for play
         self.observations.policy.enable_corruption = False
         # remove random pushing event
@@ -120,13 +126,6 @@ class HeroVehicleMoonEnvCfg_PLAY(HeroVehicleRoughEnvCfg):
             terrain_type="usd",
             usd_path = ISAAC_LAB_PATH + "/source/isaaclab_tasks/isaaclab_tasks/manager_based/moonshot/descriptions/usd/terrain/petavius_crater.usd",
             collision_group=-1,
-            # physics_material=sim_utils.RigidBodyMaterialCfg(
-            #     friction_combine_mode="average",
-            #     restitution_combine_mode="average",
-            #     static_friction=1.0,
-            #     dynamic_friction=1.0,
-            #     restitution=0.0,
-            # ),
             debug_vis=False,
         )
 

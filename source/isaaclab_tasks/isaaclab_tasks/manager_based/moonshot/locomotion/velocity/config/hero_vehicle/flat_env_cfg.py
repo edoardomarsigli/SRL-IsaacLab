@@ -32,6 +32,11 @@ class HeroVehicleFlatEnvCfg_PLAY(HeroVehicleFlatEnvCfg):
         # make a smaller scene for play
         self.scene.num_envs = 50
         self.scene.env_spacing = 2.5
+
+        self.commands.body_velocity.ranges.lin_vel_x = (0.12, 0.12)
+        self.commands.body_velocity.ranges.lin_vel_y = (0.0, 0.0)
+        self.commands.body_velocity.ranges.ang_vel_z = (0.0, 0.0)
+
         # disable randomization for play
         self.observations.policy.enable_corruption = False
         # remove random pushing event
