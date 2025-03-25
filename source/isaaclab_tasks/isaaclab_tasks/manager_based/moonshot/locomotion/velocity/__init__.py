@@ -9,4 +9,7 @@ These environments are based on the `legged_gym` environments provided by Rudin 
 
 Reference:
     https://github.com/leggedrobotics/legged_gym
+
+    
+Changes have been made to fit the Moonbots and their configurations.    
 """

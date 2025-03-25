@@ -4,7 +4,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import math
-from dataclasses import MISSING
+from datetime import datetime
+from typing import Union
+from dataclasses import MISSING, _MISSING_TYPE
 
 import isaaclab.sim as sim_utils
 from isaaclab.assets import ArticulationCfg, AssetBaseCfg
@@ -16,11 +18,13 @@ from isaaclab.managers import ObservationTermCfg as ObsTerm
 from isaaclab.managers import RewardTermCfg as RewTerm
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.managers import TerminationTermCfg as DoneTerm
+from isaaclab.managers import RecorderTermCfg
 from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.terrains import TerrainImporterCfg
 from isaaclab.utils import configclass
 from isaaclab.sensors import ContactSensorCfg, RayCasterCfg, patterns, FrameTransformerCfg, ImuCfg
 from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
+from isaaclab.envs.mdp.recorders.recorders_cfg import ActionStateRecorderManagerCfg
 
 import isaaclab_tasks.manager_based.moonshot.locomotion.velocity.mdp as mdp
 import isaaclab_tasks.manager_based.moonshot.utils as moonshot_utils
@@ -41,7 +45,7 @@ from isaaclab_tasks.manager_based.moonshot.descriptions.config.terrain.rough imp
 
 @configclass
 class MySceneCfg(InteractiveSceneCfg):
-    """Configuration for the terrain scene with a legged robot."""
+    """Configuration for the terrain scene with a Moonbot robot."""
 
     # terrain (rough)
     terrain = TerrainImporterCfg(
@@ -64,7 +68,7 @@ class MySceneCfg(InteractiveSceneCfg):
         debug_vis=False,
     )
     # robots
-    robot: ArticulationCfg = MISSING
+    robot: Union[ArticulationCfg, _MISSING_TYPE] = MISSING
     # sensors
     contact_forces = ContactSensorCfg(prim_path="{ENV_REGEX_NS}/Robot/.*", history_length=3, track_air_time=True)
     # lights
@@ -81,14 +85,13 @@ class MySceneCfg(InteractiveSceneCfg):
 # MDP settings
 ##
 
-
 @configclass
 class CommandsCfg:
     """Command specifications for the MDP."""
 
     body_velocity = mdp.UniformBodyVelocityCommandCfg(
         asset_name="robot",
-        body_name = "",
+        body_name = MISSING,
         resampling_time_range=(5, 15),
         rel_standing_envs=0.02,
         rel_heading_envs=1.0,
@@ -103,22 +106,28 @@ class CommandsCfg:
         ),
     )
 
-
-
 @configclass
 class ActionsCfg:
-    """Action specifications for the MDP."""
+    """Action specifications for the MDP.
+    Note: due to naming convention of joints in Vehicle/Dragon, we can use these shorthands for names:
 
-    joint_vel_action = mdp.JointVelocityActionCfg(asset_name="robot", 
-                                                  joint_names=["wheel11_left_joint",
-                                                               "wheel11_right_joint",
-                                                               "wheel12_left_joint",
-                                                               "wheel12_right_joint"], 
-                                                  scale=5.0)
-    joint_pos_action = mdp.JointPositionActionCfg(asset_name="robot", 
-                                                  joint_names=["leg1joint.*"], 
-                                                  scale = 0.5,
-                                                  use_default_offset=True)
+    Leg joints: leg.*
+    Wheel joints .*_joint
+
+    which is due to all leg joints being called legXjointY and wheel joints wheelXX_{left/right}_joint.
+    However, to ensure correct sorting, please overwrite the joint names in the env cfg for specific robot
+    """
+    joint_vel_action = mdp.JointVelocityActionCfg(
+        asset_name="robot", 
+        joint_names= [".*_joint",], 
+        scale=5.0
+    )
+    joint_pos_action = mdp.JointPositionActionCfg(
+        asset_name="robot", 
+        joint_names=["leg.*"],
+        scale = 0.5,
+        use_default_offset=True
+    )
 
 @configclass
 class ObservationsCfg:
@@ -219,8 +228,8 @@ class EventCfg:
         func=mdp.reset_joints_by_offset_steering_joints,
         mode="reset",
         params={
+            "steering_joints": MISSING,
             "position_range": (-math.pi/6, math.pi/6),
-            # "position_range": (-0.0, 0.0),
             "velocity_range": (0.0, 0.0),
         },
     )
@@ -284,6 +293,13 @@ class CurriculumCfg:
     )
 
 
+@configclass
+class RecorderCfg(ActionStateRecorderManagerCfg):
+    """Configuration for recorder."""
+
+    dataset_export_dir_path = "isaaclab_recordings/"
+    dataset_filename = datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + "_action_states"
+
 ##
 # Environment configuration
 ##
@@ -304,6 +320,7 @@ class LocomotionVelocityRoughEnvCfg(ManagerBasedRLEnvCfg):
     terminations: TerminationsCfg = TerminationsCfg()
     events: EventCfg = EventCfg()
     curriculum: CurriculumCfg = CurriculumCfg()
+    # recorders: RecorderCfg = RecorderCfg() # enable this to record data. WILL SLOW DOWN TRAINING BY A LOT
 
     def __post_init__(self):
         """Post initialization."""

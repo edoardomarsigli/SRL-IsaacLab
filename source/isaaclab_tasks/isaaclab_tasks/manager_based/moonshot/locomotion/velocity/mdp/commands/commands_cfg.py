@@ -4,7 +4,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import math
-from dataclasses import MISSING
+from dataclasses import MISSING,_MISSING_TYPE
+from typing import Literal, Union
 
 from isaaclab.managers import CommandTermCfg
 from isaaclab.markers import VisualizationMarkersCfg
@@ -37,7 +38,7 @@ class UniformBodyVelocityCommandCfg(CommandTermCfg):
     asset_name: str = "robot"
     """Name of the asset in the environment for which the commands are generated."""
     
-    body_name: str = MISSING
+    body_name: Union[str, _MISSING_TYPE] = MISSING
     """Name of the body in the asset for which the commands are generated."""
 
     heading_command: bool = False
@@ -65,13 +66,13 @@ class UniformBodyVelocityCommandCfg(CommandTermCfg):
     class Ranges:
         """Uniform distribution ranges for the velocity commands."""
 
-        lin_vel_x: tuple[float, float] = MISSING
+        lin_vel_x: Union[tuple[float, float], _MISSING_TYPE] = MISSING
         """Range for the linear-x velocity command (in m/s)."""
 
-        lin_vel_y: tuple[float, float] = MISSING
+        lin_vel_y: Union[tuple[float, float], _MISSING_TYPE] = MISSING
         """Range for the linear-y velocity command (in m/s)."""
 
-        ang_vel_z: tuple[float, float] = MISSING
+        ang_vel_z: Union[tuple[float, float], _MISSING_TYPE] = MISSING
         """Range for the angular-z velocity command (in rad/s)."""
 
         heading: tuple[float, float] | None = None
@@ -80,7 +81,7 @@ class UniformBodyVelocityCommandCfg(CommandTermCfg):
         This parameter is only used if :attr:`~UniformVelocityCommandWheelCfg.heading_command` is True.
         """
 
-    ranges: Ranges = MISSING
+    ranges: Union[Ranges, _MISSING_TYPE] = MISSING
     """Distribution ranges for the velocity commands."""
 
     goal_vel_visualizer_cfg: VisualizationMarkersCfg = GREEN_ARROW_X_MARKER_CFG.replace(
@@ -106,7 +107,7 @@ class UniformPoseCommandCfg(CommandTermCfg):
     asset_name: str = "robot"
     """Name of the asset in the environment for which the commands are generated."""
 
-    body_name: str = MISSING
+    body_name: Union[str, _MISSING_TYPE] = MISSING
     """Name of the body in the asset for which the commands are generated."""
 
     make_quat_unique: bool = False
@@ -119,25 +120,25 @@ class UniformPoseCommandCfg(CommandTermCfg):
     class Ranges:
         """Uniform distribution ranges for the pose commands."""
 
-        pos_x: tuple[float, float] = MISSING
+        pos_x: Union[tuple[float, float], _MISSING_TYPE] = MISSING
         """Range for the x position (in m)."""
 
-        pos_y: tuple[float, float] = MISSING
+        pos_y: Union[tuple[float, float], _MISSING_TYPE] = MISSING
         """Range for the y position (in m)."""
 
-        pos_z: tuple[float, float] = MISSING
+        pos_z: Union[tuple[float, float], _MISSING_TYPE] = MISSING
         """Range for the z position (in m)."""
 
-        roll: tuple[float, float] = MISSING
+        roll: Union[tuple[float, float], _MISSING_TYPE] = MISSING
         """Range for the roll angle (in rad)."""
 
-        pitch: tuple[float, float] = MISSING
+        pitch: Union[tuple[float, float], _MISSING_TYPE] = MISSING
         """Range for the pitch angle (in rad)."""
 
-        yaw: tuple[float, float] = MISSING
+        yaw: Union[tuple[float, float], _MISSING_TYPE] = MISSING
         """Range for the yaw angle (in rad)."""
 
-    ranges: Ranges = MISSING
+    ranges: Union[Ranges, _MISSING_TYPE] = MISSING
     """Ranges for the commands."""
 
     goal_pose_visualizer_cfg: VisualizationMarkersCfg = FRAME_MARKER_CFG.replace(prim_path="/Visuals/Command/goal_pose")
@@ -162,7 +163,7 @@ class UniformPose2dCommandCfg(CommandTermCfg):
     asset_name: str = "robot"
     """Name of the asset in the environment for which the commands are generated."""
 
-    simple_heading: bool = MISSING
+    simple_heading: Union[bool, _MISSING_TYPE] = MISSING
     """Whether to use simple heading or not.
 
     If True, the heading is in the direction of the target position.
@@ -172,19 +173,19 @@ class UniformPose2dCommandCfg(CommandTermCfg):
     class Ranges:
         """Uniform distribution ranges for the position commands."""
 
-        pos_x: tuple[float, float] = MISSING
+        pos_x: Union[tuple[float, float], _MISSING_TYPE] = MISSING
         """Range for the x position (in m)."""
 
-        pos_y: tuple[float, float] = MISSING
+        pos_y: Union[tuple[float, float], _MISSING_TYPE] = MISSING
         """Range for the y position (in m)."""
 
-        heading: tuple[float, float] = MISSING
+        heading: Union[tuple[float, float], _MISSING_TYPE] = MISSING
         """Heading range for the position commands (in rad).
 
         Used only if :attr:`simple_heading` is False.
         """
 
-    ranges: Ranges = MISSING
+    ranges: Union[Ranges, _MISSING_TYPE] = MISSING
     """Distribution ranges for the position commands."""
 
     goal_pose_visualizer_cfg: VisualizationMarkersCfg = GREEN_ARROW_X_MARKER_CFG.replace(
@@ -206,11 +207,11 @@ class TerrainBasedPose2dCommandCfg(UniformPose2dCommandCfg):
     class Ranges:
         """Uniform distribution ranges for the position commands."""
 
-        heading: tuple[float, float] = MISSING
+        heading: Union[tuple[float, float], _MISSING_TYPE] = MISSING
         """Heading range for the position commands (in rad).
 
         Used only if :attr:`simple_heading` is False.
         """
 
-    ranges: Ranges = MISSING
+    ranges: Union[Ranges, _MISSING_TYPE] = MISSING
     """Distribution ranges for the sampled commands."""

@@ -336,6 +336,28 @@ def joint_torques_vehicle_l2(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg =
 
     return torch.sum(torch.square(asset.data.applied_torque[:, leg_joint_idx]), dim=1)
 
+def joint_torques_dragon_l2(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """Penalize leg joint torques applied on the articulation using L2 squared kernel.
+
+    Excludes any wheel joint torques.
+    """
+    asset: Articulation = env.scene[asset_cfg.name]
+    all_joint_indices = range(len(asset.joint_names))
+    
+    wheel_joint_names = [
+        "wheel12_left_joint",
+        "wheel12_right_joint",
+        "wheel14_left_joint",
+        "wheel14_right_joint",
+    ] 
+
+    wheel_joint_idx = {asset.find_joints(name)[0][0] for name in wheel_joint_names}
+    # if not a wheel joint, then it's a leg joint, which makes it applicable for any number of leg joints
+    leg_joint_idx = [idx for idx in all_joint_indices if idx not in wheel_joint_idx]
+
+    return torch.sum(torch.square(asset.data.applied_torque[:, leg_joint_idx]), dim=1)
+
+
 def lin_acc_body_l2(env: ManagerBasedRLEnv, body_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
     """Penalize linear acceleration of bodies using L2 squared kernel."""
     # extract the used quantities (to enable type-hinting)

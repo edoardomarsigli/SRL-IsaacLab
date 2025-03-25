@@ -11,51 +11,72 @@ from isaaclab.assets import AssetBaseCfg
 from isaaclab_tasks.manager_based.moonshot.locomotion.velocity.velocity_env_cfg import LocomotionVelocityRoughEnvCfg
 from isaaclab.terrains import TerrainImporterCfg
 from isaaclab.managers import RewardTermCfg as RewTerm
+from isaaclab.managers import EventTermCfg as EventTerm
 
 import isaaclab_tasks.manager_based.moonshot.locomotion.velocity.mdp as mdp
-
 import isaaclab_tasks.manager_based.moonshot.utils as moonshot_utils
 ISAAC_LAB_PATH = moonshot_utils.find_isaaclab_path().replace("\\","/") 
 
 ##
 # Pre-defined configs
 ##
-from isaaclab_tasks.manager_based.moonshot.descriptions.config.moonbot_cfgs import VEHICLE_ARTICULATED_CFG  # isort: skip
+from isaaclab_tasks.manager_based.moonshot.descriptions.config.moonbot_cfgs import DRAGON_ARTICULATED_CFG  # isort: skip
 
 
 ##
 # Robot Base Link Name (desired base)
 ##
-BASE_NAME: str = "leg1link4"
+BASE_NAME: str = "leg4link4"
 WHEEL_ONLY_MODE: bool = False
 
 @configclass
-class HeroVehicleRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
+class HeroDragonRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
 
-        self.scene.robot = VEHICLE_ARTICULATED_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
+        self.scene.robot = DRAGON_ARTICULATED_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
         # scale down the terrains because the robot is small
         self.scene.terrain.terrain_generator.sub_terrains["random_rough"].noise_range=(0.001, 0.03) 
         self.scene.terrain.terrain_generator.sub_terrains["random_rough"].noise_step=0.01
 
         # commands
         self.commands.body_velocity.body_name = BASE_NAME
-        # self.commands.body_velocity.ranges.lin_vel_x = (-0.1,0.1)
-        # self.commands.body_velocity.ranges.lin_vel_y = (-0.0,0.0)
-        # self.commands.body_velocity.ranges.ang_vel_z = (-0.0,0.0)
+        self.commands.body_velocity = mdp.UniformVelocityCommandCfg(
+            asset_name="robot",
+            resampling_time_range=(5, 15),
+            rel_standing_envs=0.02,
+            rel_heading_envs=1.0,
+            heading_command=False,
+            heading_control_stiffness=0.5,
+            debug_vis=True,
+            ranges=mdp.UniformVelocityCommandCfg.Ranges(
+                lin_vel_x=(-0.12, 0.12), 
+                ang_vel_z=(-math.pi/12, math.pi/12), 
+                lin_vel_y=(-0.0, 0.0),
+                heading=(-math.pi, math.pi)
+            ),
+        )
 
         # observations
         self.observations.policy.body_lin_vel.params["body_name"] = BASE_NAME
         self.observations.policy.body_ang_vel.params["body_name"] = BASE_NAME
         
+        # actions
+        self.actions.joint_vel_action.joint_names = [
+            "wheel12_left_joint",
+            "wheel12_right_joint",
+            "wheel14_left_joint",
+            "wheel14_right_joint"
+        ]
+        self.actions.joint_pos_action.joint_names = [
+            "leg4joint.*"
+        ]
+
         # event
         self.events.push_robot = None
         self.events.add_base_mass = None
-        self.events.reset_robot_joints.params["steering_joints"] = ("leg1joint1","leg1joint7")
-        self.events.reset_robot_joints.params["position_range"] = (-math.pi/6, math.pi/6)
-        
+        self.events.reset_robot_joints.params["steering_joints"] = ("leg4joint1","leg4joint7")
         self.events.reset_base.params = {
             "pose_range": {"x": (-0.0, 0.0), "y": (-0.0, 0.0), "yaw": (-math.pi, math.pi)},
             "velocity_range": {
@@ -70,22 +91,28 @@ class HeroVehicleRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
 
         # rewards
         self.rewards.track_lin_vel_xy_exp = RewTerm(
-            func=mdp.track_lin_vel_xy_exp_vehicle, weight=1.0, params={"command_name": "body_velocity",
-                                                                   "body_name": BASE_NAME, 
-                                                                   "std": math.sqrt(0.01)}
+            func=mdp.track_lin_vel_xy_exp, 
+            weight=1.0, 
+            params= {
+                "command_name": "body_velocity",
+                "std": math.sqrt(0.01)
+            }
         )
         self.rewards.track_ang_vel_z_exp = RewTerm(
-            func=mdp.track_ang_vel_z_exp_vehicle, weight=1.0, params={"command_name": "body_velocity", 
-                                                                    "body_name": BASE_NAME,
-                                                                    "std": math.sqrt(0.01)}
+            func=mdp.track_ang_vel_z_exp, 
+            weight=1.0, 
+            params= {
+                "command_name": "body_velocity",
+                "std": math.sqrt(0.01)
+            }
         )
+        self.rewards.dof_torques_l2.func = mdp.joint_torques_dragon_l2
         self.rewards.dof_torques_l2.weight = -1.0e-4
-        self.rewards.track_lin_vel_xy_exp.weight = 1.0
-        self.rewards.track_ang_vel_z_exp.weight = 1.0
         self.rewards.dof_acc_l2.weight = -2.5e-7
+        self.rewards.upright_wheel_bodies = None
 
         # terminations
-        self.terminations.base_contact.params["sensor_cfg"].body_names = "leg1link.*"
+        self.terminations.base_contact.params["sensor_cfg"].body_names = "leg4link.*"
 
         # curriculum
         self.curriculum.terrain_levels = None
@@ -98,7 +125,7 @@ class HeroVehicleRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
             self.rewards.dof_torques_l2 = None
 
 @configclass
-class HeroVehicleRoughEnvCfg_PLAY(HeroVehicleRoughEnvCfg):
+class HeroDragonRoughEnvCfg_PLAY(HeroDragonRoughEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
@@ -125,7 +152,7 @@ class HeroVehicleRoughEnvCfg_PLAY(HeroVehicleRoughEnvCfg):
         self.events.reset_robot_joints.params["position_range"] = (-0.0,0.0)
 
 @configclass
-class HeroVehicleMoonEnvCfg_PLAY(HeroVehicleRoughEnvCfg):
+class HeroDragonMoonEnvCfg_PLAY(HeroDragonRoughEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()

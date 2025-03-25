@@ -59,6 +59,7 @@ def reset_joints_by_offset_vehicle(
 def reset_joints_by_offset_steering_joints(
     env: ManagerBasedEnv,
     env_ids: torch.Tensor,
+    steering_joints: tuple[str, str],
     position_range: tuple[float, float],
     velocity_range: tuple[float, float],
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
@@ -70,7 +71,7 @@ def reset_joints_by_offset_steering_joints(
     """
     # extract the used quantities (to enable type-hinting)
     asset: Articulation = env.scene[asset_cfg.name]
-    steering_joint_names = ["leg1joint1","leg1joint7"]
+    steering_joint_names = [steering_joints[0],steering_joints[1]]
     steering_joint_idx = [asset.find_joints(name)[0][0] for name in steering_joint_names]
     # middle_joint_idx = asset.find_joints("leg1joint4")[0][0]
 

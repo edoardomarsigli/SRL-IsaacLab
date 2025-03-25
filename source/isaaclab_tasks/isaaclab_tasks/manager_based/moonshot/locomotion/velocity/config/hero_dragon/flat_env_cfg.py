@@ -5,11 +5,11 @@
 
 from isaaclab.utils import configclass
 
-from .rough_env_cfg import HeroVehicleRoughEnvCfg
+from .rough_env_cfg import HeroDragonRoughEnvCfg
 
 
 @configclass
-class HeroVehicleFlatEnvCfg(HeroVehicleRoughEnvCfg):
+class HeroDragonFlatEnvCfg(HeroDragonRoughEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
@@ -24,7 +24,7 @@ class HeroVehicleFlatEnvCfg(HeroVehicleRoughEnvCfg):
         self.curriculum.terrain_levels = None
 
 
-class HeroVehicleFlatEnvCfg_PLAY(HeroVehicleFlatEnvCfg):
+class HeroDragonFlatEnvCfg_PLAY(HeroDragonFlatEnvCfg):
     def __post_init__(self) -> None:
         # post init of parent
         super().__post_init__()
