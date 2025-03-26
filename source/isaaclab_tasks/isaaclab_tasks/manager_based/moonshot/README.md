@@ -62,7 +62,7 @@ If you open Isaac Sim you can very simply click `File > Import` and select your 
 
 After having created your robot you can begin defining more Isaac Lab specific details. This is done using an `ArticulationCfg` as described by the very first [tutorial](https://isaac-sim.github.io/IsaacLab/main/source/how-to/write_articulation_cfg.html). You will here specify the path to the USD file of your robot in the `usd_path`. What is important in the context of Moonshot are the actuator configurations. An example from `VEHICLE_ARTICULATED_CFG` in `moonbot_cfgs.py` is:
 
-```
+```python
 [...]
 actuators = {
         "leg_joints": ImplicitActuatorCfg(
@@ -105,7 +105,7 @@ The environment configurations for robots within a specific task directory all i
 
 The environments are defined as classes that each inherit from the previous level. In the case of the Vehicle, we have
 
-```
+```python
 HeroVehicleFlatEnvCfg(  # flat environment specific to Vehicle
     HeroVehicleRoughEnvCfg( # rough enviroment specific to Vehicle
         LocomotionVelocityRoughEnvCfg # base environment
@@ -117,7 +117,7 @@ HeroVehicleFlatEnvCfg(  # flat environment specific to Vehicle
 
 When you would like to set up your own environment, then you simply inherit from base environment class and overload relevant parts with your own, such as changing the underlying function in a reward. You can also choose to remove certain parts, like a specific reward function as is done with the `upright_wheel_bodies` reward for the Dragon in `config/hero_dragon/rough_env_cfg.py`:
 
-```
+```python
 self.rewards.dof_torques_l2.func = mdp.joint_torques_dragon_l2
 self.rewards.upright_wheel_bodies = None
 ```
@@ -132,7 +132,7 @@ In the `./locomotion/velocity/config/your_robot` directory there is another fold
 
 Once you have defined your learning environment and your agent, you should then register these two as a Gym environment (see https://gymnasium.farama.org/index.html) in the `__init__.py` in the `./locomotion/velocity/config/your_robot` directory. An example can be found here:
 
-```
+```python
 gym.register(
     id="Moonshot-Velocity-Flat-Hero-Vehicle-v0",
     entry_point="isaaclab.envs:ManagerBasedRLEnv",
@@ -157,7 +157,7 @@ So you have set up your environment, but you now want to customize how your robo
 
 If everything has gone well and smooth so far, then the training is very easy to start. Given your gymnasium environment `id` (see example above), you can start your training like this:
 
-```
+```bash
 python scripts/reinforcement_learning/rsl_rl/train.py --task=Moonshot-Velocity-Flat-Hero-Vehicle-v0 --headless
 ```
 
@@ -170,7 +170,7 @@ During training it will among other things export checkpoints of your model acco
 
 Very similar to training your policy, playing your policy is also done using a simple one-liner.
 
-```
+```bash
 python scripts/reinforcement_learning/rsl_rl/play.py --task=Moonshot-Velocity-Flat-Hero-Vehicle-v0 --load_run=YYYY-MM-DD_HH-MM-SS
 ```
 
@@ -178,7 +178,7 @@ python scripts/reinforcement_learning/rsl_rl/play.py --task=Moonshot-Velocity-Fl
 
 This will play your trained policy in the same environment as you trained it in. However, it will also use the same environment settings like the number of robots, commands given, etc. So, sometimes it can make sense to define a new environment that is only used for playing a trained policy. This has been done for both Vehicle and Dragon, which would instead be called as:
 
-```
+```bash
 python scripts/reinforcement_learning/rsl_rl/play.py --task=Moonshot-Velocity-Flat-Hero-Vehicle-Play-v0 --load_run=YYYY-MM-DD_HH-MM-SS
 ```
 
@@ -189,7 +189,7 @@ Once you have played back your policy once, it will automatically export your po
 
 Isaac Lab also supports exporting a recording of robot states during inference. This can be done by adding a Recorder Manager to your environment. In this context, you can do that by simply uncommenting the following line in the `LocomotionVelocityRoughEnvCfg()` class in `velocity_env_cfg.py`.
 
-```
+```python
 # recorders: RecorderCfg = RecorderCfg()
 ```
 
@@ -199,7 +199,7 @@ It will export an HDF5 file which you can find more information about how to han
 
 To record nice foortage of your robot and trained policy you can add `--video` and `--video_length=X` to the `/play.py` script. This can work both in headless and rendering mode, but I recommend headless once you have figured out the right camera angles to allow for shorter rendering times at higher resolutions. For example:
 
-```
+```bash
 python scripts/reinforcement_learning/rsl_rl/play.py --task=Moonshot-Velocity-Flat-Hero-Vehicle-Play-v0 --load_run=YYYY-MM-DD_HH-MM-SS --video --video_length=X
 ```
 
@@ -207,14 +207,14 @@ This will export a video in the `videos` folder in the logs directory for the ru
 
 You can change the camera view by changing the settings of `sim.viewer` in the environment configuration. As an example, we have the Moon environment `HeroVehicleMoonEnvCfg_PLAY(HeroVehicleRoughEnvCfg)`. Here we have different options for the camera settings.
 
-```
+```python
 self.viewer.resolution = (2540,1440)
 self.viewer.eye = (8.0, 8.0, 4.5) # basic view
 ```
 
 This would set the resolution of the footage to 2540x1440p and change the viewing angle of the camera. The `viewer.eye` can be seen as the origin of camera which unless specified otherwise will look at origin of the world. If you wanted to have a camera that follows the robot as it moves you can use the following settings instead:
 
-```
+```python
 # make viewer follow robot
 self.viewer.origin_type = "asset_body"
 self.viewer.asset_name = "robot"
@@ -224,7 +224,7 @@ self.viewer.eye = (2.0, 2.0, 1.0) # for sideways view
 
 What is special about the `HeroVehicleMoonEnvCfg_PLAY()` is that it will not use a generated terrain but a USD file as the ground. This allows for the use of premade terrains that may look a little nicer than procedurally generated ones. You can use USD files instead of a generated terrain by overloading the `self.scene.terrain` like so: 
 
-```
+```python
 self.scene.terrain = TerrainImporterCfg(
     prim_path="/World/ground",
     terrain_type="usd",
