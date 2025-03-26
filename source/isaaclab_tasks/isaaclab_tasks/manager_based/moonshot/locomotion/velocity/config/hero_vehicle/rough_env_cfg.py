@@ -70,14 +70,22 @@ class HeroVehicleRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
 
         # rewards
         self.rewards.track_lin_vel_xy_exp = RewTerm(
-            func=mdp.track_lin_vel_xy_exp_vehicle, weight=1.0, params={"command_name": "body_velocity",
-                                                                   "body_name": BASE_NAME, 
-                                                                   "std": math.sqrt(0.01)}
+            func=mdp.track_lin_vel_xy_exp_vehicle, 
+            weight=1.0, 
+            params={
+                "command_name": "body_velocity",
+                "body_name": BASE_NAME, 
+                "std": math.sqrt(0.01)
+            }
         )
         self.rewards.track_ang_vel_z_exp = RewTerm(
-            func=mdp.track_ang_vel_z_exp_vehicle, weight=1.0, params={"command_name": "body_velocity", 
-                                                                    "body_name": BASE_NAME,
-                                                                    "std": math.sqrt(0.01)}
+            func=mdp.track_ang_vel_z_exp_vehicle, 
+            weight=1.0, 
+            params={
+                "command_name": "body_velocity", 
+                "body_name": BASE_NAME,
+                "std": math.sqrt(0.01)
+            }
         )
         self.rewards.dof_torques_l2.weight = -1.0e-4
         self.rewards.track_lin_vel_xy_exp.weight = 1.0
