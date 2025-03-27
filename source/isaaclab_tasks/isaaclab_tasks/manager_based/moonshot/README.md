@@ -30,7 +30,7 @@ Each robot directory then has its own agent (read: RL algorithm) configurations 
 
 I will here step you through what it takes to train your own robot using Isaac Lab. It starts from how you get your robot ready for Isaac Lab and ends with how you can make nice visualizations of your robot performing inference with your trained policy.  
 
-> **Note**: If you are a SRL Moonshot member, checkout the READMESRL.md for more information on how to get to started even quicker!
+> **Note**: If you are a SRL Moonshot member, check out the READMESRL.md for more information on how to get to started even quicker!
 
 ### Step 1: Create your robot
 

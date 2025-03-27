@@ -10,7 +10,7 @@ In the shared drive you can find a ZIP file named `usd_files.zip` containing a d
 ```
 SRL-Moonshot > 1. Meeting Slides & Materials > Marcus > robot_descriptions 
 ```
-In here you will find a `robot` and a `terrain` directory that contain ready-to-use-already-tested USD files. With this you can get started even quicker. The folder contains USD files that were made by me. They were made based on an alterated URDF file, which was originally made by first compiling the xacro files for Hero Vehicle and Hero Dragon. You should place these folders in the directory `moonshot/descriptions/usd/`. 
+In here you will find a `robot` and a `terrain` folder that contain ready-to-use-already-tested USD files. With this you can get started even quicker. The `robot` folder contains USD files that were made by me. They were made based on an alterated URDF file, which was originally made by first compiling the xacro files for Hero Vehicle and Hero Dragon. The `terrain` folder contains a USD file made by Hazal Goszbasi (Sagamihara field) and a Moon crater made by [SebastianSosnowski](https://sketchfab.com/SebastianSosnowski). I only slightly edited the Moon crater by adding collision meshes, rotating and scaling it. You should place these two folders in the directory `moonshot/descriptions/usd/`. 
 
 ## Creating new USD files but based on edited URDF
 
