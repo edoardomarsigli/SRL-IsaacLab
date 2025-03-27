@@ -7,9 +7,9 @@ This repository serves as the working space for Isaac Lab related tasks using th
 
 ## The File Structure
 
-**`./descriptions/`** : This directory contains all robot description related files such as URDFs, meshes and USDs. The directory also includes a `/config/` directory that has robot specific configuration details such as joint and actuator parameters used for Isaac Lab (see `moonbot_cfgs.py`) or terrains generator configurations used in the environments.
+**`./descriptions/`** : This directory contains all robot and terrain description related files such as URDFs, meshes and USDs. The directory also includes a `/config/` directory that has robot specific configuration details such as joint and actuator parameters used for Isaac Lab (see `moonbot_cfgs.py`) or terrains generator configurations used in the environments.
 
-> **Note:** Robot description files are not part of the GitHub repository to save space, but they should be where you place your descriptions. Go to the SRL Moonshot Google Drive (if you have access) to find relevant files. 
+> **Note:** Robot description files are not part of the GitHub repository, but they should be where you place your descriptions. If you are a SRL Moonshot member, see the `READMESRL.md`.
 
 **`./utils/`** : This directory contains utility functions related to integrating this workspace into Isaac Lab such as path utilities.
 
@@ -22,7 +22,6 @@ These directories each contain custom reward, event, and termination functions, 
 
 > **Note:** Currently, only locomotion tasks have been implemented. If you wish to implement other tasks, it would make sense to model them after the similar task directories in the `manager_based` directory under `isaaclab_tasks`. 
 
-### *Where are the robots at???*
 Each of the task directories contain a directory related to each specific robot in the `config`, e.g. `/hero_vehicle/`, `/hero_dragon/`, etc. This means that you may find duplicates of the robot directories but located within separate task directories.
 
 Each robot directory then has its own agent (read: RL algorithm) configurations for the different workflows (read: collection of agents) such as [Stable Baselines3](https://stable-baselines3.readthedocs.io/en/master/) or [RSL-RL](https://github.com/leggedrobotics/rsl_rl).  
@@ -31,10 +30,12 @@ Each robot directory then has its own agent (read: RL algorithm) configurations 
 
 I will here step you through what it takes to train your own robot using Isaac Lab. It starts from how you get your robot ready for Isaac Lab and ends with how you can make nice visualizations of your robot performing inference with your trained policy.  
 
+> **Note**: If you are a SRL Moonshot member, checkout the READMESRL.md for more information on how to get to started even quicker!
+
 ### Step 1: Create your robot
 
-The first thing you need to do is to create a `.usd` file describing your robot. This can be done in many ways but I will recommend two. It assumes that you have a URDF and accompanying meshes. Both these methods will create not only a USD file but also a folder called `configuration` that you should have in the same directory as the USD file when you load it. Example:
-
+The first thing you need to do is to create a `.usd` file describing your robot. This can be done in many ways but I will recommend two. It assumes that you have a URDF and accompanying meshes. Both these methods will create not only a USD file but also a folder called `configuration` that you should have in the same directory as the USD file when you load it. For example:
+```bash
 - usd/
     - robot/
         - hero_vehicle_12467/
@@ -43,7 +44,7 @@ The first thing you need to do is to create a `.usd` file describing your robot.
                 - hero_vehicle_base.usd
                 - hero_vehicle_physics.usd
                 - hero_vehicle_sensor.usd
-
+```
 > **Note**: You will often see a robot name followed by numbers in the repository. This is just my own naming convention that indicates which joints in the leg are articulated. Here leg joint 1, 2, 4, 6, and 7 are articulated, while leg joint 3 and 5 are fixed.
 
 #### Option 1: Use the converter script
@@ -108,14 +109,14 @@ The environments are defined as classes that each inherit from the previous leve
 ```python
 HeroVehicleFlatEnvCfg(  # flat environment specific to Vehicle
     HeroVehicleRoughEnvCfg( # rough enviroment specific to Vehicle
-        LocomotionVelocityRoughEnvCfg # base environment
+        LocomotionVelocityRoughEnvCfg() # base environment
     )
 )
 ```
 
 #### Customizing your environment
 
-When you would like to set up your own environment, then you simply inherit from base environment class and overload relevant parts with your own, such as changing the underlying function in a reward. You can also choose to remove certain parts, like a specific reward function as is done with the `upright_wheel_bodies` reward for the Dragon in `config/hero_dragon/rough_env_cfg.py`:
+When you would like to set up your own environment, then you simply inherit from base environment class and overload relevant parts with your own, such as adding the robot or changing the underlying function in a reward. You can also choose to remove certain parts, like a specific reward function as is done with the `upright_wheel_bodies` reward for the Dragon in `config/hero_dragon/rough_env_cfg.py`:
 
 ```python
 self.rewards.dof_torques_l2.func = mdp.joint_torques_dragon_l2
@@ -130,7 +131,7 @@ In the `./locomotion/velocity/config/your_robot` directory there is another fold
 
 #### The gymnasium environments
 
-Once you have defined your learning environment and your agent, you should then register these two as a Gym environment (see https://gymnasium.farama.org/index.html) in the `__init__.py` in the `./locomotion/velocity/config/your_robot` directory. An example can be found here:
+Once you have defined your learning environment and your agent, you should then register these two as a Gym environment (see https://gymnasium.farama.org/index.html) in the `__init__.py` in the `./locomotion/velocity/config/your_robot/` directory. An example can be found here:
 
 ```python
 gym.register(
@@ -145,7 +146,7 @@ gym.register(
 )
 ```
 
-#### Modelling the Markov Decision Proces 
+#### Modelling the Markov Decision Process
 
 So you have set up your environment, but you now want to customize how your robot should interact with that environment. Here is where the Markov Decision Process (MDP) descriptions come in. In the `./locomotion/velocity/` directory there is an `mdp/` directory that contains all related information. You can view this as a database of reusable MDP elements that you can apply in all in your different environments as you see fit. If you want to add a reward function, define it in the `mdp/rewards.py` file and you can later reuse it with `mdp.my_reward_function()`. 
 
@@ -165,6 +166,15 @@ For more details you can always refer to the [tutorials](https://isaac-sim.githu
 
 During training it will among other things export checkpoints of your model according to how you setup your agent. For instance, with the command above these logs can be found in a timestamped folder at `IsaacLab/logs/rsl_rl/hero_vehicle_flat/YYYY-MM-DD_HH-MM-SS`. 
 
+#### View training logs
+
+To view the training logs you can do as described in the [tutorials](https://isaac-sim.github.io/IsaacLab/main/source/tutorials/03_envs/run_rl_training.html#viewing-the-logs). For example this will show the training logs for the flat environment for the Hero Vehicle:
+
+```bash
+python -m tensorboard.main --logdir logs/rsl_rl/hero_vehicle_flat 
+```
+
+This will host a local TensorBoard page, whose address will be given by the output in the terminal and can be directly pasted into your browser. 
 
 ### Step 5: Play your policy
 
@@ -185,9 +195,9 @@ python scripts/reinforcement_learning/rsl_rl/play.py --task=Moonshot-Velocity-Fl
 Once you have played back your policy once, it will automatically export your policy as both a `policy.pt` and `policy.onnx` file in the `exported/` folder. In the `params/` folder you can find details about what environment the policy was trained in, what robot it was trained on, observations, reward functions, and more.
 
 
-#### Recording robot states during inference
+#### Recording time series of robot states during inference
 
-Isaac Lab also supports exporting a recording of robot states during inference. This can be done by adding a Recorder Manager to your environment. In this context, you can do that by simply uncommenting the following line in the `LocomotionVelocityRoughEnvCfg()` class in `velocity_env_cfg.py`.
+Isaac Lab also supports exporting a time series of robot states during inference. This can be done by adding a Recorder Manager to your environment. In this context, you can do that by simply uncommenting the following line in the `LocomotionVelocityRoughEnvCfg()` class in `velocity_env_cfg.py`.
 
 ```python
 # recorders: RecorderCfg = RecorderCfg()
@@ -200,7 +210,7 @@ It will export an HDF5 file which you can find more information about how to han
 To record nice foortage of your robot and trained policy you can add `--video` and `--video_length=X` to the `/play.py` script. This can work both in headless and rendering mode, but I recommend headless once you have figured out the right camera angles to allow for shorter rendering times at higher resolutions. For example:
 
 ```bash
-python scripts/reinforcement_learning/rsl_rl/play.py --task=Moonshot-Velocity-Flat-Hero-Vehicle-Play-v0 --load_run=YYYY-MM-DD_HH-MM-SS --video --video_length=X
+python scripts/reinforcement_learning/rsl_rl/play.py --task=Moonshot-Velocity-Flat-Hero-Vehicle-Play-v0 --load_run=YYYY-MM-DD_HH-MM-SS --headless --video --video_length=X
 ```
 
 This will export a video in the `videos` folder in the logs directory for the run specified by `--load_run` with length equal to X timesteps. A timestep length is defined in the environment configuration. For instance, if you set `self.decimation = 4` and `self.sim.dt = 0.005`, then a `video_length=3000` would correspond to 60 seconds of video (`3000 * (0.005*4) = 60`). 
