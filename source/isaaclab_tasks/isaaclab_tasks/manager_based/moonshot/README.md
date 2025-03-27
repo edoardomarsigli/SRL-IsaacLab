@@ -26,11 +26,22 @@ Each of the task directories contain a directory related to each specific robot 
 
 Each robot directory then has its own agent (read: RL algorithm) configurations for the different workflows (read: collection of agents) such as [Stable Baselines3](https://stable-baselines3.readthedocs.io/en/master/) or [RSL-RL](https://github.com/leggedrobotics/rsl_rl).  
 
+## Installation procedure
+
+To install everything correctly, please follow this procedure:
+
+- Go to https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/pip_installation.html and set up Isaac Sim as they instruct
+- When you get to Isaac Lab, instead of cloning the original Isaac Lab repository, clone this repository, and run the same commands as they do
+- And you should now be good to go!
+
+>**Note**: This has only been tested on the workstations in the SRL Moonshot office, whose specs are Intel i9-14900KF, RTX 4090, 64 GB RAM. 
+
+
 ## How To Train Your Dragon (or Vehicle)
 
 I will here step you through what it takes to train your own robot using Isaac Lab. It starts from how you get your robot ready for Isaac Lab and ends with how you can make nice visualizations of your robot performing inference with your trained policy.  
 
-> **Note**: If you are a SRL Moonshot member, check out the READMESRL.md for more information on how to get to started even quicker!
+> **Note**: If you are a SRL Moonshot member, check out the `READMESRL.md` for more information on how to get to started even quicker!
 
 ### Step 1: Create your robot
 

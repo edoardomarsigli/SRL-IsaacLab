@@ -249,14 +249,22 @@ class RewardsCfg:
     
     # -- task
     track_lin_vel_xy_exp = RewTerm(
-        func=mdp.track_lin_vel_xy_exp_vehicle, weight=1.0, params={"command_name": "body_velocity",
-                                                                   "body_name": MISSING, 
-                                                                   "std": math.sqrt(0.01)}
+        func=mdp.track_lin_vel_xy_exp_vehicle, 
+        weight=1.0, 
+        params={
+            "command_name": "body_velocity",
+            "body_name": MISSING, 
+            "std": math.sqrt(0.01)
+        }
     )
     track_ang_vel_z_exp = RewTerm(
-        func=mdp.track_ang_vel_z_exp_vehicle, weight=1.0, params={"command_name": "body_velocity", 
-                                                                  "body_name": MISSING,
-                                                                  "std": math.sqrt(0.01)}
+        func=mdp.track_ang_vel_z_exp_vehicle, 
+        weight=1.0, 
+        params={
+            "command_name": "body_velocity", 
+            "body_name": MISSING,
+            "std": math.sqrt(0.01)
+        }
     )
     # -- penalties
     termination_penalty = RewTerm(func=mdp.is_terminated, weight=-400)
@@ -265,7 +273,6 @@ class RewardsCfg:
     dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-7)
     action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-1.0e-2)
     
-    energy = RewTerm(func=mdp.power_consumption, weight=-1.0e-1, params={"gear_ratio": {".*": 1.0}})
     upright_wheel_bodies = RewTerm(
         func=mdp.upright_wheel_bodies_angle,
         weight = -1.0,

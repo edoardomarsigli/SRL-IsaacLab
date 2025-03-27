@@ -50,15 +50,15 @@ WHEEL_MODULE_CFG = ArticulationCfg(
     actuators = {
         "wm1_wheel_left_actuator": ImplicitActuatorCfg(
             joint_names_expr=["wm1_wheel_left_joint"],
-            effort_limit=400.0,
-            velocity_limit=100.0,
+            effort_limit_sim=400.0,
+            velocity_limit_sim=100.0,
             stiffness=0.0,
             damping=10.0,
         ),
         "wm1_wheel_right_actuator": ImplicitActuatorCfg(
             joint_names_expr=["wm1_wheel_right_joint"],
-            effort_limit=400.0,
-            velocity_limit=100.0,
+            effort_limit_sim=400.0,
+            velocity_limit_sim=100.0,
             stiffness=0.0,
             damping=10.0,
         ),
@@ -102,8 +102,8 @@ VEHICLE_CFG = ArticulationCfg(
             joint_names_expr=["leg1joint1",
                               "leg1joint4",
                               "leg1joint7"],
-            effort_limit=136.11,
-            velocity_limit=0.145,
+            effort_limit_sim=136.11,
+            velocity_limit_sim=0.145,
             stiffness=1e6,
             damping=100,
         ),
@@ -112,8 +112,8 @@ VEHICLE_CFG = ArticulationCfg(
                               "wheel11_right_joint",
                               "wheel12_left_joint",
                               "wheel12_right_joint"],
-            effort_limit=136.11,
-            velocity_limit=0.5,
+            effort_limit_sim=136.11,
+            velocity_limit_sim=0.5,
             stiffness=0,
             damping=10.0
         ),
@@ -123,8 +123,8 @@ VEHICLE_CFG = ArticulationCfg(
         #                       "leg1gripper1_jaw_right_joint",
         #                       "leg1gripper2_jaw_left_joint",
         #                       "leg1gripper2_jaw_right_joint"],
-        #     effort_limit=400,
-        #     velocity_limit=100,
+        #     effort_limit_sim=400,
+        #     velocity_limit_sim=100,
         #     stiffness=0,
         #     damping=0
         # ),
@@ -167,8 +167,8 @@ VEHICLE_ARTICULATED_CFG = ArticulationCfg(
     actuators = {
         "leg_joints": ImplicitActuatorCfg(
             joint_names_expr=["leg1joint.*"],
-            effort_limit=36.11,
-            velocity_limit=0.145,
+            effort_limit_sim=36.11,
+            velocity_limit_sim=0.145,
             stiffness=1e6,
             damping=100,
         ),
@@ -177,8 +177,8 @@ VEHICLE_ARTICULATED_CFG = ArticulationCfg(
                               "wheel11_right_joint",
                               "wheel12_left_joint",
                               "wheel12_right_joint"],
-            effort_limit=136.11,
-            velocity_limit=0.5,
+            effort_limit_sim=136.11,
+            velocity_limit_sim=0.5,
             stiffness=0,
             damping=10.0
         ),
@@ -221,8 +221,8 @@ DRAGON_ARTICULATED_CFG = ArticulationCfg(
     actuators = {
         "leg_joints": ImplicitActuatorCfg(
             joint_names_expr=["leg4joint.*"],
-            effort_limit=36.11,
-            velocity_limit=0.145, # 0.145
+            effort_limit_sim=36.11,
+            velocity_limit_sim=0.145, # 0.145
             stiffness=1e6,
             damping=100,
         ),
@@ -231,8 +231,8 @@ DRAGON_ARTICULATED_CFG = ArticulationCfg(
                               "wheel12_right_joint",
                               "wheel14_left_joint",
                               "wheel14_right_joint"],
-            effort_limit=136.11,
-            velocity_limit=0.5,
+            effort_limit_sim=136.11,
+            velocity_limit_sim=0.5,
             stiffness=0,
             damping=10.0
         ),
@@ -268,15 +268,15 @@ CARTER_CFG = ArticulationCfg(
     actuators = {
         "leg3_wheel_left_actuator": ImplicitActuatorCfg(
             joint_names_expr=["left_wheel"],
-            effort_limit=400.0,
-            velocity_limit=100.0,
+            effort_limit_sim=400.0,
+            velocity_limit_sim=100.0,
             stiffness=0.0,
             damping=10.0,
         ),
         "leg3_wheel_right_actuator": ImplicitActuatorCfg(
             joint_names_expr=["right_wheel"],
-            effort_limit=400.0,
-            velocity_limit=100.0,
+            effort_limit_sim=400.0,
+            velocity_limit_sim=100.0,
             stiffness=0.0,
             damping=10.0,
         ),
