@@ -34,7 +34,7 @@ To install everything correctly, please follow this procedure:
 - When you get to Isaac Lab, instead of cloning the original Isaac Lab repository, clone this repository, and run the same commands as they do
 - And you should now be good to go!
 
->**Note**: This has only been tested on the workstations in the SRL Moonshot office, whose specs are Intel i9-14900KF, RTX 4090, 64 GB RAM. 
+>**Note**: This has been tested on fresh profile on a workstation in the SRL Moonshot office, whose specs are Ubuntu 22.04, Intel i9-14900KF, RTX 4090, 64 GB RAM. 
 
 
 ## How To Train Your Dragon (or Vehicle)
