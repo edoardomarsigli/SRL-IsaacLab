@@ -2,7 +2,7 @@
 
 This repository serves as the working space for Isaac Lab related tasks using the [Manager Based Reinforcement Learning Environment](https://isaac-sim.github.io/IsaacLab/main/source/tutorials/03_envs/create_manager_rl_env.html) format. It functions as an isolated unit that integrates into the Isaac Lab methodology, meaning that all SRL Moonshot related content is contained within this repository. It also means that you could essentially clone the original Isaac Lab repository and simply copy this `moonshot` directory into it.
 
-> **Note:** Before continuing it is *highly* recommended that you do the great [Isaac Lab tutorials](https://isaac-sim.github.io/IsaacLab/main/source/tutorials/index.html) that the developers themselves have made. The following will assume that you have this level of knowledge.
+> **Note:** Before continuing it is *highly* recommended that you do the great [Isaac Lab tutorials](https://isaac-sim.github.io/IsaacLab/main/source/tutorials/index.html) that the developers themselves have made. The following will assume that you have close to this level of knowledge.
 
 
 ## The File Structure

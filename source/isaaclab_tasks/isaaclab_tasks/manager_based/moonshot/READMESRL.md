@@ -6,7 +6,7 @@ This short guide will describe how you can get relevant USD files to start train
 
 ## How to get the already made USD files
 
-In the shared drive you can find a ZIP file named `usd_files.zip` containing a directory called `usd/`. This ZIP file is located at 
+In the shared drive you can find a ZIP file named `usd_files.zip`. This ZIP file is located at 
 ```
 SRL-Moonshot > 1. Meeting Slides & Materials > Marcus > robot_descriptions 
 ```
