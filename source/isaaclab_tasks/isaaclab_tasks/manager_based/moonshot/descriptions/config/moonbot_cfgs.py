@@ -207,7 +207,7 @@ DRAGON_ARTICULATED_CFG = ArticulationCfg(
         ),
     ),
     init_state=ArticulationCfg.InitialStateCfg(
-    pos=(0.0, 0.0, 0.30),
+    pos=(0.0, 0.0, 0.35),
     # pos=(-1.0, -5.0, 0.30),
     joint_pos = {".*": 0.0}
     ),

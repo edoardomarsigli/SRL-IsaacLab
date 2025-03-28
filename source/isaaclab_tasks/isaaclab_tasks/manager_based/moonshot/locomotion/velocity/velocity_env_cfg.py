@@ -272,7 +272,8 @@ class RewardsCfg:
     dof_torques_l2 = RewTerm(func=mdp.joint_torques_vehicle_l2, weight=-1.0e-4)
     dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-7)
     action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-1.0e-2)
-    
+    energy = RewTerm(func=mdp.power_consumption, weight=-2.5e-2, params={"gear_ratio": {".*": 1.0}})
+
     upright_wheel_bodies = RewTerm(
         func=mdp.upright_wheel_bodies_angle,
         weight = -1.0,
