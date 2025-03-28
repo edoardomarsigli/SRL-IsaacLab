@@ -26,6 +26,8 @@ Each of the task directories contain a directory related to each specific robot 
 
 Each robot directory then has its own agent (read: RL algorithm) configurations for the different workflows (read: collection of agents) such as [Stable Baselines3](https://stable-baselines3.readthedocs.io/en/master/) or [RSL-RL](https://github.com/leggedrobotics/rsl_rl).  
 
+> **Note**: If you want to start adding your own tasks, agents or otherwise, there are templates in the parent directory of this repository at `SRL-IsaacLab > tools > template > templates` that you might find useful. 
+
 ## Installation procedure
 
 To install everything correctly, please follow this procedure:
