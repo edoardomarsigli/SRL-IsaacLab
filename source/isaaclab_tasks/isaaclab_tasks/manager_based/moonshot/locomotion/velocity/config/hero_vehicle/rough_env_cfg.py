@@ -15,13 +15,17 @@ from isaaclab.managers import RewardTermCfg as RewTerm
 import isaaclab_tasks.manager_based.moonshot.locomotion.velocity.mdp as mdp
 
 import isaaclab_tasks.manager_based.moonshot.utils as moonshot_utils
-ISAAC_LAB_PATH = moonshot_utils.find_isaaclab_path().replace("\\","/") 
 
 ##
 # Pre-defined configs
 ##
 from isaaclab_tasks.manager_based.moonshot.descriptions.config.moonbot_cfgs import VEHICLE_ARTICULATED_CFG  # isort: skip
 
+##
+# Path
+##
+
+ISAAC_LAB_PATH = moonshot_utils.find_isaaclab_path().replace("\\","/")
 
 ##
 # Robot Base Link Name (desired base)

@@ -2,17 +2,11 @@ from __future__ import annotations
 
 import torch
 import math
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
-import carb
-import omni.physics.tensors.impl.api as physx
-
-import isaaclab.sim as sim_utils
 import isaaclab.utils.math as math_utils
-from isaaclab.actuators import ImplicitActuator
-from isaaclab.assets import Articulation, DeformableObject, RigidObject
-from isaaclab.managers import EventTermCfg, ManagerTermBase, SceneEntityCfg
-from isaaclab.terrains import TerrainImporter
+from isaaclab.assets import Articulation
+from isaaclab.managers import SceneEntityCfg
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedEnv

@@ -8,7 +8,6 @@
 from __future__ import annotations
 
 import torch
-import math
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
@@ -157,7 +156,6 @@ class UniformBodyVelocityCommand(CommandTerm):
         max_command_step = max_command_time / self._env.step_dt
         # logs data
         body_lin_vel_d = self._get_body_vel_d(self.robot.data.body_lin_vel_w[:, self.body_link_idx, :])
-        body_ang_vel_d = self._get_body_vel_d(self.robot.data.body_ang_vel_w[:, self.body_link_idx, :])
 
         self.metrics["error_vel_xy"] += (
             torch.norm(self.vel_command_b[:, :2] - body_lin_vel_d[:, :2], dim=-1) / max_command_step

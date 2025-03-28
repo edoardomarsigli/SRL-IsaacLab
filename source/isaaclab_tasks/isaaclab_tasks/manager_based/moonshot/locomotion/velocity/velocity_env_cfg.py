@@ -18,11 +18,10 @@ from isaaclab.managers import ObservationTermCfg as ObsTerm
 from isaaclab.managers import RewardTermCfg as RewTerm
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.managers import TerminationTermCfg as DoneTerm
-from isaaclab.managers import RecorderTermCfg
 from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.terrains import TerrainImporterCfg
 from isaaclab.utils import configclass
-from isaaclab.sensors import ContactSensorCfg, RayCasterCfg, patterns, FrameTransformerCfg, ImuCfg
+from isaaclab.sensors import ContactSensorCfg
 from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
 from isaaclab.envs.mdp.recorders.recorders_cfg import ActionStateRecorderManagerCfg
 
@@ -30,13 +29,17 @@ import isaaclab_tasks.manager_based.moonshot.locomotion.velocity.mdp as mdp
 import isaaclab_tasks.manager_based.moonshot.utils as moonshot_utils
 
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR
-ISAAC_LAB_PATH = moonshot_utils.find_isaaclab_path().replace("\\","/") #  
+
 ##
 # Pre-defined configs
 ##
-from isaaclab_tasks.manager_based.moonshot.descriptions.config.moonbot_cfgs import VEHICLE_ARTICULATED_CFG  # isort: skip
-from isaaclab_tasks.manager_based.moonshot.descriptions.config.terrain.rough import ROUGH_TERRAINS_CFG, ROUGH_HILLY_TERRAINS_CFG
+from isaaclab_tasks.manager_based.moonshot.descriptions.config.terrain.rough import ROUGH_TERRAINS_CFG
 
+##
+# Path
+##
+
+ISAAC_LAB_PATH = moonshot_utils.find_isaaclab_path().replace("\\","/")
 
 ##
 # Scene definition

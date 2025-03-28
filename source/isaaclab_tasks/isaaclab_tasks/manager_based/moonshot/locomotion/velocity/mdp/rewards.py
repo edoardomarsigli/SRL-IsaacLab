@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import torch
-import math
 from typing import TYPE_CHECKING
 
 import isaaclab.utils.math as math_utils
@@ -285,27 +284,9 @@ def track_ang_vel_z_exp_vehicle(env: ManagerBasedRLEnv, std: float, command_name
     asset: RigidObject = env.scene[asset_cfg.name]
     body_link_idx = asset.find_bodies(body_name)[0][0]
     body_ang_vel_w = asset.data.body_ang_vel_w[:, body_link_idx, :]
-    body_quat_w = asset.data.body_quat_w[:, body_link_idx, :]
-    if body_name == "leg1link2":
-        tf_d_matrix = torch.tensor([[-1,0,0],[0,0,1],[0,1,0]], device = env.device)
-        tf_d_matrix_expanded = tf_d_matrix.unsqueeze(0).expand(env.num_envs, -1, -1)
-        tf_d_quat = math_utils.quat_from_matrix(tf_d_matrix_expanded)
-    elif body_name == "leg1link4":
-        tf_d_matrix = torch.tensor([[0,0,-1],[-1,0,0],[0,1,0]], device = env.device)
-        tf_d_matrix_expanded = tf_d_matrix.unsqueeze(0).expand(env.num_envs, -1, -1)
-        tf_d_quat = math_utils.quat_from_matrix(tf_d_matrix_expanded)
-    else:
-        raise ValueError(f"Unexpected link name: {body_name}")
-    
-    quat_w_d = math_utils.quat_mul(body_quat_w, tf_d_quat)
-    
-    body_ang_vel_d = math_utils.quat_rotate_inverse(
-        quat_w_d, body_ang_vel_w
-    )
-    # compute the error
-    # ang_vel_error = torch.square(env.command_manager.get_command(command_name)[:, 2] - body_ang_vel_d[:, 2])
-    ang_vel_error = torch.square(env.command_manager.get_command(command_name)[:, 2] - body_ang_vel_w[:, 2])
 
+    # compute the error
+    ang_vel_error = torch.square(env.command_manager.get_command(command_name)[:, 2] - body_ang_vel_w[:, 2])
 
     return torch.exp(-ang_vel_error / std**2)
 

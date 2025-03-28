@@ -1,6 +1,6 @@
 """Miscellaneous utility functions"""
 
-from typing import List, Dict, Tuple
+from typing import List
 
 import re
 import os

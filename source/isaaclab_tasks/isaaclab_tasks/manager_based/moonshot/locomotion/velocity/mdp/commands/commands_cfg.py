@@ -5,7 +5,7 @@
 
 import math
 from dataclasses import MISSING,_MISSING_TYPE
-from typing import Literal, Union
+from typing import Union
 
 from isaaclab.managers import CommandTermCfg
 from isaaclab.markers import VisualizationMarkersCfg

@@ -5,9 +5,7 @@ from __future__ import annotations
 import isaaclab.sim as sim_utils
 from isaaclab.actuators import ImplicitActuatorCfg
 from isaaclab.assets import ArticulationCfg
-from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 import isaaclab_tasks.manager_based.moonshot.utils as moonshot_utils
-import math
 
 # Get full path, replace is for Windows paths
 ISAAC_LAB_PATH = moonshot_utils.find_isaaclab_path().replace("\\","/") #  
