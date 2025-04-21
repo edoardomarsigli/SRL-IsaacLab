@@ -204,4 +204,54 @@ class HeroDragonMoonEnvCfg_PLAY(HeroDragonRoughEnvCfg):
         self.events.base_external_force_torque = None
         self.events.push_robot = None
 
-       
+
+##edo
+@configclass
+class HeroDragonMoonEnvCfg_PLAY_EDO(HeroDragonRoughEnvCfg):
+    def __post_init__(self):
+        # post init of parent
+        super().__post_init__()
+        self.episode_length_s = 20.0
+        self.sim.gravity = (0,0,-1.62)
+        self.scene.light = AssetBaseCfg(
+            prim_path="/World/light",
+            spawn=sim_utils.DistantLightCfg(color=(0.75, 0.75, 0.75), intensity=15000.0),
+            init_state=AssetBaseCfg.InitialStateCfg(rot = (0.52133, 0.47771, 0.47771, 0.52133))
+        )
+
+        self.scene.terrain = TerrainImporterCfg(
+            prim_path="/World/ground",
+            terrain_type="usd",
+            usd_path = ISAAC_LAB_PATH + "/source/isaaclab_tasks/isaaclab_tasks/manager_based/moonshot/descriptions/usd/terrain/petavius_crater.usd",
+            collision_group=-1,
+            debug_vis=False,
+        )
+
+        self.commands.body_velocity.ranges.lin_vel_x = (0.12, 0.12)
+        self.commands.body_velocity.ranges.lin_vel_y = (0.0, 0.0)
+        self.commands.body_velocity.ranges.ang_vel_z = (0.0, 0.0)
+
+        self.viewer.resolution = (1920,1080)
+
+        # self.viewer.eye = (8.0, 8.0, 4.5) # basic view
+        # self.viewer.eye = (0.0, 0.0, 27.0) # bird eye view
+
+        # make viewer follow robot
+        self.viewer.origin_type = "asset_body"
+        self.viewer.asset_name = "robot"
+        self.viewer.body_name = BASE_NAME
+
+        # self.viewer.eye = (0.0, 0.0, 4.0) # for top down view 
+        self.viewer.eye = (3.0, 3.0, 2.0) # for sideways view 
+
+        # make a smaller scene for play
+        self.scene.num_envs = 4
+        self.scene.env_spacing = 6.5
+        
+        self.curriculum.terrain_levels = None
+
+        # disable randomization for play
+        self.observations.policy.enable_corruption = False
+        # remove random pushing event
+        self.events.base_external_force_torque = None
+        self.events.push_robot = None        

@@ -65,3 +65,14 @@ gym.register(
         "skrl_cfg_entry_point": f"{agents.__name__}:skrl_rough_ppo_cfg.yaml",
     },
 )
+##edo
+gym.register(
+    id="Moonshot-Velocity-Moon-Hero-Dragon-Play-v0_EDO",
+    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.rough_env_cfg:HeroDragonMoonEnvCfg_PLAY_EDO",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:HeroDragonRoughPPORunnerCfg_EDO",
+        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_rough_ppo_cfg_EDO.yaml",
+    },
+)
