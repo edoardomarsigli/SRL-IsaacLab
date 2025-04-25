@@ -41,8 +41,7 @@ class HeroVehicleRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
 
         self.scene.robot = VEHICLE_ARTICULATED_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
         # scale down the terrains because the robot is small
-        self.scene.terrain.terrain_generator.sub_terrains["random_rough"].noise_range=(0.001, 0.03) 
-        self.scene.terrain.terrain_generator.sub_terrains["random_rough"].noise_step=0.01
+         
 
         # commands
         self.commands.body_velocity.body_name = BASE_NAME

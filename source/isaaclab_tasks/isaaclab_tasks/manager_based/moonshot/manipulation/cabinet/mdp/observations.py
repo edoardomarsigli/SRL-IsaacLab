@@ -16,44 +16,83 @@ if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
 
 
-def rel_ee_object_distance(env: ManagerBasedRLEnv) -> torch.Tensor:
-    """The distance between the end-effector and the object."""
-    ee_tf_data: FrameTransformerData = env.scene["ee_frame"].data
-    object_data: ArticulationData = env.scene["object"].data
 
-    return object_data.root_pos_w - ee_tf_data.target_pos_w[..., 0, :]
+# def rel_ee__distance(env: ManagerBasedRLEnv) -> torch.Tensor:
+#     """The distance between the end-effector and the object."""
+#     ee_tf_data: FrameTransformerData = env.scene["ee_frame"].data
+#     cabinet_tf_data: FrameTransformerData = env.scene["handle_frame"].data
+#     return cabinet_tf_data.target_pos_w[..., 0, :] - ee_tf_data.target_pos_w[..., 0, :]
 
-
-def rel_ee_drawer_distance(env: ManagerBasedRLEnv) -> torch.Tensor:
-    """The distance between the end-effector and the object."""
-    ee_tf_data: FrameTransformerData = env.scene["ee_frame"].data
-    cabinet_tf_data: FrameTransformerData = env.scene["cabinet_frame"].data
-
-    return cabinet_tf_data.target_pos_w[..., 0, :] - ee_tf_data.target_pos_w[..., 0, :]
-
-
-def fingertips_pos(env: ManagerBasedRLEnv) -> torch.Tensor:
-    """The position of the fingertips relative to the environment origins."""
-    ee_tf_data: FrameTransformerData = env.scene["ee_frame"].data
-    fingertips_pos = ee_tf_data.target_pos_w[..., 1:, :] - env.scene.env_origins.unsqueeze(1)
-
-    return fingertips_pos.view(env.num_envs, -1)
+def rel_ee__distance(env: ManagerBasedRLEnv) -> torch.Tensor:
+    """Returns distance between EE and handle; safe even if handle_frame not ready."""
+    try:
+        ee_tf_data: FrameTransformerData = env.scene["ee_frame"].data
+        handle_tf_data: FrameTransformerData = env.scene["handle_frame"].data
+        #return handle_tf_data.target_pos_w[..., 0, :] - ee_tf_data.target_pos_w[..., 0, :]
+        return handle_tf_data.target_pos_w_named["handle_target"] - ee_tf_data.target_pos_w_named["ee"]
+    except (KeyError, AttributeError) as e:
+        # Se il frame non è pronto, ritorna zeri temporanei
+        return torch.zeros((env.num_envs, 3), device=env.device)
 
 
 def ee_pos(env: ManagerBasedRLEnv) -> torch.Tensor:
-    """The position of the end-effector relative to the environment origins."""
-    ee_tf_data: FrameTransformerData = env.scene["ee_frame"].data
-    ee_pos = ee_tf_data.target_pos_w[..., 0, :] - env.scene.env_origins
+    """Returns the position of the end-effector relative to the environment origins.
+    If the frame is not yet available, returns zero tensors as fallback."""
+    try:
+        ee_tf_data: FrameTransformerData = env.scene["ee_frame"].data
+        ee_pos = ee_tf_data.target_pos_w_named["ee"] - env.scene.env_origins
+        return ee_pos
+    except (KeyError, AttributeError):
+        # Se il frame non è pronto, ritorna zeri temporanei
+        return torch.zeros((env.num_envs, 3), device=env.device)
+    
 
-    return ee_pos
+def handle_pos(env: ManagerBasedRLEnv) -> torch.Tensor:
+    """Returns the position of the handle relative to the environment origins.
+    If the frame is not yet available, returns zero tensors as fallback."""
+    try:
+        handle_tf_data: FrameTransformerData = env.scene["handle_frame"].data
+        handle_pos = handle_tf_data.target_pos_w_named["handle_target"] - env.scene.env_origins
+        return handle_pos
+    except (KeyError, AttributeError):
+        # Se il frame non è pronto, ritorna zeri temporanei
+        return torch.zeros((env.num_envs, 3), device=env.device)
+
+
+
+def rel_rf__distance(env: ManagerBasedRLEnv) -> torch.Tensor:
+    """Returns distance between right finger and handle; safe even if handle_frame not ready."""
+    try:
+        ee_tf_data: FrameTransformerData = env.scene["ee_frame"].data
+        rf_tf_data: FrameTransformerData = env.scene["rf_frame"].data
+        #return handle_tf_data.target_pos_w[..., 0, :] - ee_tf_data.target_pos_w[..., 0, :]
+        return rf_tf_data.target_pos_w_named["rf"] - ee_tf_data.target_pos_w_named["ee"]
+    except (KeyError, AttributeError) as e:
+        # Se il frame non è pronto, ritorna zeri temporanei
+        return torch.zeros((env.num_envs, 3), device=env.device)
+    
+
+def rel_lf__distance(env: ManagerBasedRLEnv) -> torch.Tensor:
+    """Returns distance between left finger and handle; safe even if handle_frame not ready."""
+    try:
+        ee_tf_data: FrameTransformerData = env.scene["ee_frame"].data
+        rf_tf_data: FrameTransformerData = env.scene["lf_frame"].data
+        #return handle_tf_data.target_pos_w[..., 0, :] - ee_tf_data.target_pos_w[..., 0, :]
+        return rf_tf_data.target_pos_w_named["lf"] - ee_tf_data.target_pos_w_named["ee"]
+    except (KeyError, AttributeError) as e:
+        # Se il frame non è pronto, ritorna zeri temporanei
+        return torch.zeros((env.num_envs, 3), device=env.device)
 
 
 def ee_quat(env: ManagerBasedRLEnv, make_quat_unique: bool = True) -> torch.Tensor:
-    """The orientation of the end-effector in the environment frame.
-
-    If :attr:`make_quat_unique` is True, the quaternion is made unique by ensuring the real part is positive.
+    """Returns the orientation (quaternion) of the end-effector in the world frame.
+    If `make_quat_unique` is True, ensures the quaternion has a positive real part to avoid discontinuities.
+    If the frame is not yet available, returns identity quaternions.
     """
-    ee_tf_data: FrameTransformerData = env.scene["ee_frame"].data
-    ee_quat = ee_tf_data.target_quat_w[..., 0, :]
-    # make first element of quaternion positive
-    return math_utils.quat_unique(ee_quat) if make_quat_unique else ee_quat
+    try:
+        ee_tf_data: FrameTransformerData = env.scene["ee_frame"].data
+        ee_quat = ee_tf_data.target_quat_w_named["ee"]
+        return math_utils.quat_unique(ee_quat) if make_quat_unique else ee_quat
+    except (KeyError, AttributeError):
+        # Se il frame non è pronto, ritorna quaternioni identità (0, 0, 0, 1)
+        return torch.tensor([[0.0, 0.0, 0.0, 1.0]] * env.num_envs, device=env.device)
