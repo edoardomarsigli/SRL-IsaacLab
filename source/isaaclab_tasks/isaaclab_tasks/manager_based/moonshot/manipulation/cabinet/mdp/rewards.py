@@ -15,6 +15,22 @@ if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
 
 
+    
+
+def curriculum_wrapper(reward_fn, min_episode: int):
+    """
+    Attiva il reward solo dopo un certo numero di episodi.
+    """
+    def wrapped(env, *args, **kwargs):
+        if not hasattr(env, "episode_counter"):
+            return torch.zeros(env.num_envs, device=env.device)
+        mask = env.episode_counter >= min_episode
+        reward = reward_fn(env, *args, **kwargs)
+        return reward * mask.float()
+    return wrapped
+
+
+
 
 def approach_ee_handle(env: ManagerBasedRLEnv, threshold: float = 0.2) -> torch.Tensor:
     try:
@@ -29,7 +45,7 @@ def approach_ee_handle(env: ManagerBasedRLEnv, threshold: float = 0.2) -> torch.
         return torch.zeros(env.num_envs, device=env.device)
 
 
-def align_ee_handle(env: ManagerBasedRLEnv, align_threshold) -> torch.Tensor:
+def align_ee_handle(env: ManagerBasedRLEnv, align_threshold) -> torch.Tensor: #allineamento orientamento ee handle
     """
     Reward for aligning the end-effector with the handle.
 
@@ -52,7 +68,7 @@ def align_ee_handle(env: ManagerBasedRLEnv, align_threshold) -> torch.Tensor:
     align_x = torch.bmm(ee_x.unsqueeze(1), -handle_x.unsqueeze(-1)).squeeze(-1).squeeze(-1)  # (N,)
 
     # Main shaped reward
-    shaped_reward = 0.6 * torch.sign(align_z) * align_z**2 + 0.4 * torch.sign(align_x) * align_x**2
+    shaped_reward = 0.4 * torch.sign(align_z) * align_z**2 + 0.6 * torch.sign(align_x) * align_x**2
 
     # Binary bonus: if alignment exceeds threshold
     z_bonus = (align_z >= align_threshold).float() * 0.5
@@ -63,7 +79,7 @@ def align_ee_handle(env: ManagerBasedRLEnv, align_threshold) -> torch.Tensor:
 
 
 
-def approach_xy_alignment(env: ManagerBasedRLEnv, xy_threshold, align_threshold) -> torch.Tensor:
+def approach_zy_alignment(env: ManagerBasedRLEnv, zy_threshold, align_threshold) -> torch.Tensor: #allineamento xy e bonus solo se align ee handle buono
     """
     Reward for aligning the EE and handle origins in the XY plane (ignores Z axis).
     """
@@ -83,52 +99,55 @@ def approach_xy_alignment(env: ManagerBasedRLEnv, xy_threshold, align_threshold)
         # Dot products (alignment measures)
         align_z = torch.bmm(ee_z.unsqueeze(1), -handle_z.unsqueeze(-1)).squeeze(-1).squeeze(-1)  # (N,)
         align_x = torch.bmm(ee_x.unsqueeze(1), -handle_x.unsqueeze(-1)).squeeze(-1).squeeze(-1)  # (N,)
+
         handle_pos = env.scene["handle_frame"].data.target_pos_w[..., 0, :]
         ee_pos = env.scene["ee_frame"].data.target_pos_w[..., 0, :]
 
         # Take only X and Y
-        handle_xy = handle_pos[..., :2]
-        ee_xy = ee_pos[..., :2]
+        handle_yz = handle_pos[..., [1, 2]]
+        ee_yz = ee_pos[...,  [1, 2]]
 
         # Euclidean distance in XY plane
-        distance_xy = torch.norm(handle_xy - ee_xy, dim=-1, p=2)
+        distance_yz = torch.norm(handle_yz - ee_yz, dim=-1, p=2)
 
         # Reward shaping
-        reward = 1.0 / (1.0 + distance_xy**2)
+        reward = 1.0 / (1.0 + distance_yz**2)
         reward = torch.pow(reward, 2)
 
-        xy_bonus = (distance_xy <= xy_threshold).float()
+        yz_bonus = (distance_yz <= zy_threshold).float()
 
         # Bonus if close enough
-        return torch.where(align_z >= align_threshold, reward, torch.zeros_like(reward))+xy_bonus
+        return torch.where((align_z >= align_threshold) & (align_x >= align_threshold), reward, torch.zeros_like(reward))+yz_bonus
 
     except (KeyError, AttributeError):
         return torch.zeros(env.num_envs, device=env.device)
     
 
-def approach_z_conditional_on_xy(env: ManagerBasedRLEnv, xy_threshold) -> torch.Tensor:
+def approach_x_conditional_on_yz(env: ManagerBasedRLEnv, zy_threshold) -> torch.Tensor: #allineamento z solo se xy buono
     """
     Reward for minimizing the vertical (Z-axis) distance between EE and handle,
     but only if their XY positions are close (within xy_threshold).
     """
     try:
-        handle_pos = env.scene["handle_frame"].data.target_pos_w[..., 0, :]  # (N, 3)
-        ee_pos = env.scene["ee_frame"].data.target_pos_w[..., 0, :]          # (N, 3)
+        handle_pos = env.scene["handle_frame"].data.target_pos_w[..., 0, :]
+        ee_pos = env.scene["ee_frame"].data.target_pos_w[..., 0, :]
 
-        # Step 1: Calcola la distanza in XY
-        handle_xy = handle_pos[..., :2]  # (N, 2)
-        ee_xy = ee_pos[..., :2]          # (N, 2)
-        distance_xy = torch.norm(handle_xy - ee_xy, dim=-1, p=2)  # (N,)
+        # Take only X and Y
+        handle_yz = handle_pos[..., [1, 2]]
+        ee_yz = ee_pos[...,  [1, 2]]
+
+        # Euclidean distance in XY plane
+        distance_yz = torch.norm(handle_yz - ee_yz, dim=-1, p=2)
 
         # Step 2: Calcola la distanza lungo l'asse Z (modulo)
-        z_distance = torch.abs(handle_pos[..., 2] - ee_pos[..., 2])  # (N,)
+        x_distance = torch.abs(handle_pos[..., 0] - ee_pos[..., 0])  # (N,)
 
         # Step 3: Reward shaping sulla distanza Z (solo se XY è sotto soglia)
-        z_reward = 1.0 / (1.0 + z_distance**2)
-        z_reward = torch.pow(z_reward, 2)
+        x_reward = 1.0 / (1.0 + x_distance**2)
+        x_reward = torch.pow(x_reward, 2)
 
         # Step 4: Applica solo se XY è vicino
-        return torch.where(distance_xy <= xy_threshold, z_reward, torch.zeros_like(z_reward))
+        return torch.where(distance_yz <= zy_threshold, x_reward, torch.zeros_like(x_reward))
 
     except (KeyError, AttributeError):
         return torch.zeros(env.num_envs, device=env.device)
@@ -154,51 +173,38 @@ def align_grasp(env: ManagerBasedRLEnv) -> torch.Tensor: # bonus per rf e lf sop
     # bonus if left finger is above the drawer handle and right below
     return is_graspable
 
+import torch
 
-# def approach_gripper_handle(env: ManagerBasedRLEnv, offset: float = 0.04) -> torch.Tensor:
-#     """Reward the robot's gripper reaching the drawer handle with the right pose.
+def penalize_low_joints(env, threshold) -> torch.Tensor:
+    
+    """
+    Penalizza se i giunti specificati sono troppo vicini al terreno.
 
-#     This function returns the distance of fingertips to the handle when the fingers are in a grasping orientation
-#     (i.e., the left finger is above the handle and the right finger is below the handle). Otherwise, it returns zero.
-#     """
-#     # Target object position: (num_envs, 3)
-#     handle_pos = env.scene["handle_frame"].data.target_pos_w_named["handle_target"]
-#     # Fingertips position: (num_envs, n_fingertips, 3)
-#     lf_pos = env.scene["lf_frame"].data.target_pos_w_named["lf"]
-#     rf_pos = env.scene["rf_frame"].data.target_pos_w_named["rf"]
+    Args:
+        env: ambiente RL
+        threshold: altezza minima (in metri) sotto cui scatta la penalità
+        joint_names: tuple con i nomi dei giunti da controllare
 
-#     # Compute the distance of each finger from the handle
-#     lf_dist = torch.abs(lf_pos[:, 2] - handle_pos[:, 2])
-#     rf_dist = torch.abs(rf_pos[:, 2] - handle_pos[:, 2])
+    Returns:
+        Penalità negativa (più grande se i giunti sono molto bassi)
+    """
+    try:
+    # Ottieni le posizioni dei giunti
+        joint4_pos = env.scene["joint4_frame"].data.target_pos_w[..., 0, :]
+        joint4_z = joint4_pos[...,  2]
 
-#     # Check if hand is in a graspable pose
-#     is_graspable = (rf_pos[:, 2] > handle_pos[:, 2]) & (lf_pos[:, 2] < handle_pos[:, 2])
+        # Calcola maschera: True se sotto soglia
 
-#     return is_graspable * ((offset - lf_dist) + (offset - rf_dist))
+        below_threshold = joint4_z < threshold
 
+        # Penalità proporzionale alla distanza sotto soglia (opzionale)
+        penalty_magnitudes = torch.where(below_threshold, threshold - joint4_z, torch.zeros_like(joint4_z),
+        )
 
-# def grasp_handle(
-#     env: ManagerBasedRLEnv, threshold: float, open_joint_pos: float, asset_cfg: SceneEntityCfg
-# ) -> torch.Tensor:
-#     """Reward for closing the fingers when being close to the handle.
-
-#     The :attr:`threshold` is the distance from the handle at which the fingers should be closed.
-#     The :attr:`open_joint_pos` is the joint position when the fingers are open.
-
-#     Note:
-#         It is assumed that zero joint position corresponds to the fingers being closed.
-#     """
-#     ee_pos = env.scene["ee_frame"].data.target_pos_w_named["ee"] 
-#     handle_pos = env.scene["handle_frame"].data.target_pos_w_named["handle_target"]
-# lf_pos = env.scene["lf_frame"].data.target_pos_w_named["lf"]
-#     rf_pos = env.scene["rf_frame"].data.target_pos_w_named["rf"]
-
-#     gripper_joint_pos = env.scene[asset_cfg.name].data.joint_pos[:, asset_cfg.joint_ids]
-
-#     distance = torch.norm(handle_pos - ee_pos, dim=-1, p=2)
-#     is_close = distance <= threshold
-
-#     return is_close * torch.sum(open_joint_pos - gripper_joint_pos, dim=-1)
+        # Moltiplica per un coefficiente forte negativo
+        return -10.0 * penalty_magnitudes  # <-- qui controlli quanto vuoi punire
+    except (KeyError, AttributeError):
+            return torch.zeros(env.num_envs, device=env.device)
 
 
 def grasp_handle(

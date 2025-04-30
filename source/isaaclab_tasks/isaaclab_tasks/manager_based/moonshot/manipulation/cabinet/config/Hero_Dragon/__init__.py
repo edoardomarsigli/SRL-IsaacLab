@@ -17,7 +17,7 @@ from . import agents
 
 gym.register(
     id="Manipulation-HeroDragon-v0",
-    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    entry_point="isaaclab_tasks.manager_based.moonshot.manipulation.cabinet.HeroDragonGraspEnv:HeroDragonGraspEnv",
     kwargs={
         "env_cfg_entry_point": f"{__name__}.joint_pos_env_cfg:HeroDragonGraspEnvCfg",
         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:HeroDragonGraspPPORunnerCfg",
@@ -29,7 +29,7 @@ gym.register(
 
 gym.register(
     id="Manipulation-HeroDragon-Play-v0",
-    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    entry_point="isaaclab_tasks.manager_based.moonshot.manipulation.cabinet.HeroDragonGraspEnv:HeroDragonGraspEnv",
     kwargs={
         "env_cfg_entry_point": f"{__name__}.joint_pos_env_cfg:HeroDragonGraspEnvCfg_PLAY",
         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:HeroDragonGraspPPORunnerCfg",

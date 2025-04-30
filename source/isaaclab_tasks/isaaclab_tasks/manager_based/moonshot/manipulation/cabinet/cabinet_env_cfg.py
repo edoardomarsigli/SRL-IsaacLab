@@ -14,6 +14,7 @@ from isaaclab.managers import ObservationGroupCfg as ObsGroup
 from isaaclab.managers import ObservationTermCfg as ObsTerm
 from isaaclab.managers import RewardTermCfg as RewTerm
 from isaaclab.managers import TerminationTermCfg as DoneTerm
+from isaaclab.managers import SceneEntityCfg
 from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.sensors import FrameTransformerCfg
 from isaaclab.sensors.frame_transformer import OffsetCfg
@@ -21,17 +22,21 @@ from isaaclab.utils import configclass
 import isaaclab_tasks.manager_based.moonshot.utils as moonshot_utils
 from isaaclab.terrains import TerrainImporterCfg
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR
-from isaaclab_tasks.manager_based.moonshot.descriptions.config.terrain.rough import ROUGH_TERRAINS_CFG
-from isaaclab.managers import SceneEntityCfg
+from isaaclab.assets import AssetBaseCfg
+from isaaclab.sim import UsdFileCfg
+#from isaaclab.terrains.config.rough import PERLIN_TERRAIN_CFG
+
 
 
 ISAAC_LAB_PATH = moonshot_utils.find_isaaclab_path().replace("\\","/")
 
-from isaaclab.sim import UsdFileCfg
 
 
-from . import mdp
-from isaaclab_tasks.manager_based.moonshot.descriptions.config.moonbot_cfgs_edo import DRAGON_ARTICULATED_CFG, WHEEL_WITH_HANDLE_CFG
+
+from isaaclab_tasks.manager_based.moonshot.manipulation.cabinet import mdp
+from isaaclab_tasks.manager_based.moonshot.manipulation.cabinet.mdp import Event as mdp_events
+
+
 
 
 ##
@@ -54,9 +59,7 @@ class DragonGraspSceneCfg(InteractiveSceneCfg):
 
     terrain = TerrainImporterCfg(
         prim_path="/World/ground",
-        terrain_type="generator",
-        terrain_generator=ROUGH_TERRAINS_CFG,
-        max_init_terrain_level=5,
+        terrain_type="plane",
         collision_group=-1,
         physics_material=sim_utils.RigidBodyMaterialCfg(
             friction_combine_mode="multiply",
@@ -67,31 +70,82 @@ class DragonGraspSceneCfg(InteractiveSceneCfg):
         visual_material=sim_utils.MdlFileCfg(
             mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
             project_uvw=True,
-            texture_scale=(0.25, 0.25),
-        ),
+            texture_scale=(0.25, 0.25)),
         debug_vis=True
-        
     )
+
+    # terrain = AssetBaseCfg(
+    #     prim_path="/World/ground",
+    #     spawn=UsdFileCfg(
+    #         usd_path=f"{ISAAC_LAB_PATH}/source/isaaclab_tasks/isaaclab_tasks/manager_based/moonshot/descriptions/usd/terrain/ground_plane_white.usd",  # oppure uno tuo
+    #         scale=(3, 3, 1),
+    #     ),
+    #     collision_group=-1,
+    # )
+
+
 
     # Robot (popolato dall'env cfg)
     robot: ArticulationCfg = MISSING
     ee_frame: FrameTransformerCfg = MISSING
-    handle_frame: FrameTransformerCfg = MISSING
-    rf_frame: FrameTransformerCfg = MISSING
-    lf_frame: FrameTransformerCfg = MISSING
+    # handle_frame: FrameTransformerCfg = MISSING
+    # rf_frame: FrameTransformerCfg = MISSING
+    # lf_frame: FrameTransformerCfg = MISSING
     # Ruota fissa con maniglia
-    wheel_with_handle = ArticulationCfg(
-        prim_path="{ENV_REGEX_NS}/hero_wheel/wheel11_out",
+    wheel_with_handle: ArticulationCfg= MISSING
 
-        spawn=UsdFileCfg(
-            usd_path=ISAAC_LAB_PATH + "/source/isaaclab_tasks/isaaclab_tasks/manager_based/moonshot/descriptions/usd/robot/HERO_wheel/hero_wheel.usd",
-            scale=(1.0, 1.0, 1.0),
-        ),
-        init_state=ArticulationCfg.InitialStateCfg(
-            pos=(0.8, 0.0, 0.3),  # allinea con il braccio leg3
-            rot=(0.0, 0.0, 0.0, 1.0),
-        ),
+    handle_frame=FrameTransformerCfg(
+        prim_path="{ENV_REGEX_NS}/hero_wheel/wheel11_out",
+        debug_vis=True,
+        visualizer_cfg=FRAME_MARKER_SMALL_CFG.replace(prim_path="/Visuals/HandleFrame"),
+        target_frames=[
+            FrameTransformerCfg.FrameCfg(
+                prim_path="{ENV_REGEX_NS}/hero_wheel/wheel11_out",
+                name="handle_target",
+                offset=OffsetCfg(pos=(0.0, 0.0, 0.0)),
+            )
+        ],
     )
+
+    rf_frame=FrameTransformerCfg(
+        prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper2_jaw_right",
+        debug_vis=False,
+        visualizer_cfg=FRAME_MARKER_SMALL_CFG.replace(prim_path="/Visuals/RFFrame"),
+        target_frames=[
+            FrameTransformerCfg.FrameCfg(
+                prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper2_jaw_right",
+                name="rf",
+                offset=OffsetCfg(pos=(0.0, 0.0, 0.0)),
+            )
+        ],
+    )
+
+    lf_frame=FrameTransformerCfg(
+        prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper2_jaw_left",
+        debug_vis=False,
+        visualizer_cfg=FRAME_MARKER_SMALL_CFG.replace(prim_path="/Visuals/LFFrame"),
+        target_frames=[
+            FrameTransformerCfg.FrameCfg(
+                prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper2_jaw_left",
+                name="lf",
+                offset=OffsetCfg(pos=(0.0, 0.0, 0.0)),
+            )
+        ],
+    )
+
+    joint4_frame=FrameTransformerCfg(
+        prim_path="{ENV_REGEX_NS}/hero_dragon/leg2link4",
+        debug_vis=False,
+        visualizer_cfg=FRAME_MARKER_SMALL_CFG.replace(prim_path="/Visuals/LFFrame"),
+        target_frames=[
+            FrameTransformerCfg.FrameCfg(
+                prim_path="{ENV_REGEX_NS}/hero_dragon/leg2link4",
+                name="joint4",
+                offset=OffsetCfg(pos=(0.0, 0.0, 0.0)),
+            )
+        ],
+    )
+
 
     # Lights
     light = AssetBaseCfg(
@@ -113,6 +167,9 @@ class ActionsCfg:
     """Action specifications for the MDP."""
     arm_action: mdp.JointPositionActionCfg = MISSING
     gripper_action: mdp.JointPositionActionCfg = MISSING
+
+    #actions: MultiAgentActionsCfg = MultiAgentActionsCfg()
+
 
 
 @configclass
@@ -147,13 +204,34 @@ class ObservationsCfg:
     # observation groups
     policy: PolicyCfg = PolicyCfg()
 
+# @configclass
+# class ObservationsCfg:
+#     class ArmPolicyCfg(ObsGroup):
+#         joint_pos = ObsTerm(func=mdp.joint_pos_rel)
+#         ee_pos = ObsTerm(func=mdp.ee_pos)
+#         handle_pos = ObsTerm(func=mdp.handle_pos)
+
+#     class Gripper2PolicyCfg(ObsGroup):
+#         joint_pos = ObsTerm(func=mdp.joint_pos_rel)
+#         lf_dist = ObsTerm(func=mdp.rel_lf__distance)
+#         rf_dist = ObsTerm(func=mdp.rel_rf__distance)
+
+#     class Gripper1PolicyCfg(ObsGroup):
+#         joint_pos = ObsTerm(func=mdp.joint_pos_rel)
+#         # eventualmente null obs + reward
+
+#     arm: ArmPolicyCfg = ArmPolicyCfg()
+#     gripper2: Gripper2PolicyCfg = Gripper2PolicyCfg()
+#     gripper1: Gripper1PolicyCfg = Gripper1PolicyCfg()
+
+
 
 @configclass
 class EventCfg:
     """Configuration for events."""
 
     robot_physics_material = EventTerm(      #serve per domain randomization per far imparare a muovere il robot con fisica variabile
-        func=mdp.randomize_rigid_body_material,
+        func=mdp_events.randomize_rigid_body_material,
         mode="startup",
         params={
             "asset_cfg": SceneEntityCfg("robot", body_names=".*"),
@@ -164,10 +242,11 @@ class EventCfg:
         },
     )
 
-    reset_all = EventTerm(func=mdp.reset_scene_to_default, mode="reset")
+
+    reset_all = EventTerm(func=mdp_events.reset_scene_to_default, mode="reset")
 
     reset_robot_joints = EventTerm(     #serve per il reset della posizione del robot in posizione casuale intorno alla posizione iniziale
-        func=mdp.reset_joints_by_offset,
+        func=mdp_events.reset_joints_by_offset,
         mode="reset",
         params={
             "position_range": (-0.1, 0.1),
@@ -176,35 +255,91 @@ class EventCfg:
     )
 
 
-@configclass
+# @configclass   #reward senza curriculum
+# class RewardsCfg:
+#     """Reward terms for the MDP."""
+
+#     #approach_ee_handle = RewTerm(func=mdp.approach_ee_handle, weight=2.0, params={"threshold": 0.03})
+
+#     align_ee_handle = RewTerm(func=mdp.align_ee_handle, weight=2, params={"align_threshold": 0.9})
+
+#     approach_zy_alignment = RewTerm(func=mdp.approach_zy_alignment, weight=1, params={"zy_threshold": 0.05, "align_threshold": 0.9})
+
+#     approach_x_conditional_on_yz = RewTerm(func=mdp.approach_x_conditional_on_yz, weight=1, params={"zy_threshold": 0.05})
+
+#     penalize_low_joints = RewTerm(func=mdp.penalize_low_joints, weight=0.25, params={"threshold": 0.2})
+
+#     align_grasp = RewTerm(func=mdp.align_grasp, weight=0.1)
+
+#     # approach_gripper_handle = RewTerm(func=mdp.approach_gripper_handle, weight=5.0, params={"offset": MISSING})
+#     grasp_handle = RewTerm(
+#         func=mdp.grasp_handle,
+#         weight=1,
+#         params={
+#             "threshold": 0.05,
+#             "open_joint_pos": None,
+#             "asset_cfg": SceneEntityCfg("robot", joint_names=None),
+#         },
+#     )
+
+
+#     # 4. Penalize actions for cosmetic reasons
+#     action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.05)
+#     joint_vel = RewTerm(func=mdp.joint_vel_l2, weight=-0.005)
+
+
+from isaaclab_tasks.manager_based.moonshot.manipulation.cabinet.rewards import curriculum_wrapper
+
+...
+
 class RewardsCfg:
-    """Reward terms for the MDP."""
+    ...
 
-    approach_ee_handle = RewTerm(func=mdp.approach_ee_handle, weight=2.0, params={"threshold": 0.03})
+    align_ee_handle = RewTerm(func=mdp.align_ee_handle, weight=2, params={"align_threshold": 0.9})
 
-    # align_ee_handle = RewTerm(func=mdp.align_ee_handle, weight=5, params={"align_threshold": 0.99})
+    approach_zy_alignment = RewTerm(
+        func=curriculum_wrapper(mdp.approach_zy_alignment, min_episode=100),  # 🟢 ATTIVO DOPO 100 episodi
+        weight=1, params={"zy_threshold": 0.05, "align_threshold": 0.9}
+    )
 
-    # approach_xy_alignment = RewTerm(func=mdp.approach_xy_alignment, weight=0.125, params={"xy_threshold": 0.03, "align_threshold": 0.99})
+    approach_x_conditional_on_yz = RewTerm(
+        func=curriculum_wrapper(mdp.approach_x_conditional_on_yz, min_episode=200),  # 🟢 ATTIVO DOPO 200 episodi
+        weight=1, params={"zy_threshold": 0.05}
+    )
 
-    # approach_z_conditional_on_xy = RewTerm(func=mdp.approach_z_conditional_on_xy, weight=0.125, params={"xy_threshold": 0.03})
-    
-    # align_grasp = RewTerm(func=mdp.align_grasp, weight=0.125)
-
-    # # approach_gripper_handle = RewTerm(func=mdp.approach_gripper_handle, weight=5.0, params={"offset": MISSING})
-    # grasp_handle = RewTerm(
-    #     func=mdp.grasp_handle,
-    #     weight=0.5,
-    #     params={
-    #         "threshold": 0.03,
-    #         "open_joint_pos": None,
-    #         "asset_cfg": SceneEntityCfg("robot", joint_names=None),
-    #     },
+    # align_grasp = RewTerm(
+    #     func=curriculum_wrapper(mdp.align_grasp, min_episode=300),  # 🟢 ATTIVO DOPO 300 episodi
+    #     weight=0.1
     # )
+    align_grasp = RewTerm(func=mdp.align_grasp, weight=0.1)
+
+    grasp_handle = RewTerm(
+        func=curriculum_wrapper(mdp.grasp_handle, min_episode=500),  # 🟢 ATTIVO DOPO 300 episodi
+        weight=1,
+        params={
+            "threshold": 0.05,
+            "open_joint_pos": None,
+            "asset_cfg": SceneEntityCfg("robot", joint_names=None),
+        },
+    )
 
 
-    # # 4. Penalize actions for cosmetic reasons
-    # action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-1e-2)
-    # joint_vel = RewTerm(func=mdp.joint_vel_l2, weight=-0.0001)
+# @configclass
+# class RewardsCfg:
+#     class ArmRewards:
+#         align_ee_handle = RewTerm(...)
+#         approach_zy_alignment = ...
+    
+#     class Gripper2Rewards:
+#         grasp_handle = RewTerm(...)
+#         align_grasp = ...
+    
+#     class Gripper1Rewards:
+#         stay_closed = RewTerm(func=mdp.keep_gripper1_closed, weight=1.0)
+
+#     arm = ArmRewards()
+#     gripper2 = Gripper2Rewards()
+#     gripper1 = Gripper1Rewards()
 
 
 @configclass
@@ -212,6 +347,8 @@ class TerminationsCfg:
     """Termination terms for the MDP."""
 
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
+    grasp_completed = DoneTerm(func=mdp_events.grasp_completed) #uso la funzione grasp_completed del mio events.py customizzato
+
 
 
 ##
@@ -221,62 +358,8 @@ class TerminationsCfg:
 
 @configclass
 class DragonGraspEnvCfg(ManagerBasedRLEnvCfg):
-    scene: DragonGraspSceneCfg = DragonGraspSceneCfg(
-        num_envs=4096,
-        env_spacing=3.0,
-        robot=DRAGON_ARTICULATED_CFG,
-        wheel_with_handle=WHEEL_WITH_HANDLE_CFG,
-        ee_frame=FrameTransformerCfg(
-            prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper2_base",
-            debug_vis=True,
-            visualizer_cfg=FRAME_MARKER_SMALL_CFG.replace(prim_path="/Visuals/EEFrame"),
-            target_frames=[
-                FrameTransformerCfg.FrameCfg(
-                    # prim_path="{ENV_REGEX_NS}/hero_wheel/wheel11_in/wheel11_center/wheel11_out",
-                    prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper2_base",
-                     name="ee",
-                    offset=OffsetCfg(pos=(0.0, 0.0, 0.055)), #devo aggiungere l offset dalla base del gripper al punto di contatto con handle
-                )
-            ],
-        ),
-        handle_frame=FrameTransformerCfg(
-            prim_path="{ENV_REGEX_NS}/hero_wheel/wheel11_out",
-            debug_vis=True,
-            visualizer_cfg=FRAME_MARKER_SMALL_CFG.replace(prim_path="/Visuals/HandleFrame"),
-            target_frames=[
-                FrameTransformerCfg.FrameCfg(
-                    prim_path="{ENV_REGEX_NS}/hero_wheel/wheel11_out",
-                    name="handle_target",
-                    offset=OffsetCfg(pos=(0.0, 0.0, 0.0)),
-                )
-            ],
-        ),
-        rf_frame=FrameTransformerCfg(
-            prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper2_jaw_right",
-            debug_vis=False,
-            visualizer_cfg=FRAME_MARKER_SMALL_CFG.replace(prim_path="/Visuals/RFFrame"),
-            target_frames=[
-                FrameTransformerCfg.FrameCfg(
-                    prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper2_jaw_right",
-                    name="rf",
-                    offset=OffsetCfg(pos=(0.0, 0.0, 0.0)),
-                )
-            ],
-        ),
-        lf_frame=FrameTransformerCfg(
-            prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper2_jaw_left",
-            debug_vis=False,
-            visualizer_cfg=FRAME_MARKER_SMALL_CFG.replace(prim_path="/Visuals/LFFrame"),
-            target_frames=[
-                FrameTransformerCfg.FrameCfg(
-                    prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper2_jaw_left",
-                    name="lf",
-                    offset=OffsetCfg(pos=(0.0, 0.0, 0.0)),
-                )
-            ],
-        ),
+    scene: DragonGraspSceneCfg = DragonGraspSceneCfg(num_envs=4096,env_spacing=6)
 
-    )
 
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()
@@ -306,7 +389,7 @@ class DragonGraspEnvCfg(ManagerBasedRLEnvCfg):
         # # self.sim.physx.gpu_max_rigid_patch_count = 50 * 2**15
 
         self.decimation = 1
-        self.episode_length_s = 4.0
+        self.episode_length_s = 8.0
         self.viewer.eye = (-2.0, 2.0, 2.0)
         self.viewer.lookat = (0.8, 0.0, 0.5)
         # simulation settings
@@ -315,3 +398,4 @@ class DragonGraspEnvCfg(ManagerBasedRLEnvCfg):
         self.sim.physx.bounce_threshold_velocity = 0.5
         self.sim.physx.friction_correlation_distance = 0.00625
         self.sim.physx.enable_ccd = True  # se hai movimenti molto veloci o piccoli oggetti, abilita CCD (collision detection continua)
+

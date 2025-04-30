@@ -87,6 +87,7 @@ class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
         self.metadata["render_fps"] = 1 / self.step_dt
 
         print("[INFO]: Completed setting up the environment...")
+        print("🚫 ManagerBasedRLEnv base __init__ CALLED", flush=True)
 
     """
     Properties.

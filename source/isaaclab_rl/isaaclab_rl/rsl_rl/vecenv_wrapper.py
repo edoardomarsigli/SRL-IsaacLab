@@ -172,6 +172,10 @@ class RslRlVecEnvWrapper(VecEnv):
         # clip actions
         if self.clip_actions is not None:
             actions = torch.clamp(actions, -self.clip_actions, self.clip_actions)
+
+        if hasattr(self.env, "pre_physics_step"):
+            self.env.pre_physics_step(actions)    
+            
         # record step information
         obs_dict, rew, terminated, truncated, extras = self.env.step(actions)
         # compute dones for compatibility with RSL-RL
