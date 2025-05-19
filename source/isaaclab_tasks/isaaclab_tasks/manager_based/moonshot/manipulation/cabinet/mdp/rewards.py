@@ -481,7 +481,7 @@ def grasp_handle_curriculum_wrapped(env: ManagerBasedRLEnv) -> torch.Tensor:
     reward= grasp_handle(env, closed2_threshold=-0.02)
 
     global_episode_counter = env.episode_counter.min() #attivazione sincronizzata tra gli envs
-    mask = global_episode_counter >= 400
+    mask = global_episode_counter >= 0
     # mask = env.episode_counter >= 600
     if mask:
         return reward
@@ -512,7 +512,7 @@ def grasp2_curriculum_wrapped(env: ManagerBasedRLEnv) -> torch.Tensor:
 
     reward= grasp2(env)
     global_episode_counter = env.episode_counter.min() #attivazione sincronizzata tra gli envs
-    mask = global_episode_counter >= 400
+    mask = global_episode_counter >= 0
     # mask = env.episode_counter >= 600
     if mask:
         return reward
