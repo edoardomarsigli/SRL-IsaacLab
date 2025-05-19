@@ -357,9 +357,9 @@ class RewardsCfg:   #reward con curriculum
     
     reward_joint4_height = RewTerm(func=mdp.reward_joint4_height, weight=1, params={"threshold": 0.5, "z_limit": 0.75})
     
-    approach_zy = RewTerm(func=mdp.approach_zy_alignment_curriculum_wrapped, weight=1)
+    # approach_zy = RewTerm(func=mdp.approach_zy_alignment_curriculum_wrapped, weight=1)
         
-    approach_x = RewTerm(func=mdp.approach_x_conditional_on_yz_curriculum_wrapped, weight=2)
+    # approach_x = RewTerm(func=mdp.approach_x_conditional_on_yz_curriculum_wrapped, weight=2)
 
 
     collision_penalty = RewTerm(func=mdp.collision_penalty, weight=1.0, params={"weight": -3.0})
