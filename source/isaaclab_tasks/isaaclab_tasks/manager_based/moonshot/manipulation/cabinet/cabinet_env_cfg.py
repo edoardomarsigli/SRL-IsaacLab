@@ -371,7 +371,7 @@ class RewardsCfg:   #reward con curriculum
 
     # approach_gripper_handle = RewTerm(func=mdp.approach_gripper_handle, weight=5.0, params={"offset": MISSING})
 
-    grasp_handle = RewTerm(func=mdp.grasp_handle_curriculum_wrapped,weight=1)
+    # grasp_handle = RewTerm(func=mdp.grasp_handle_curriculum_wrapped,weight=1)
 
     grasp_handle2 = RewTerm(func=mdp.grasp2_curriculum_wrapped,weight=1)
 
