@@ -3,34 +3,54 @@ import torch
 import atexit
 
 from isaaclab_tasks.manager_based.moonshot.manipulation.cabinet.mdp import Event as mdp_events
+from isaaclab_tasks.manager_based.moonshot.manipulation.cabinet.mdp.rewards import get_curriculum_thresholds
+
+
 
 class HeroDragonGraspEnv(ManagerBasedRLEnv):
 
     def __init__(self, cfg, **kwargs):
         super().__init__(cfg, **kwargs)
 
-        # Inizializza grasp_completed una volta sola qui!
-        self.grasp_completed = torch.zeros((self.num_envs,), dtype=torch.bool, device="cuda")
-        print("✅ HeroDragonGraspEnv constructor CALLED", flush=True)
-        self.episode_counter = torch.zeros((self.num_envs,), dtype=torch.long, device="cuda")
-        if self.episode_counter.max().item() % 100 == 0:
-            print(f"▶️ Episode counters: {self.episode_counter}")
 
+        print("✅ HeroDragonGraspEnv constructor CALLED", flush=True)
+
+        # self.grasp_manager: GraspManager = self.scene.grasp_managers["grasp"]
+        self.episode_counter = torch.zeros((self.num_envs,), dtype=torch.long, device="cuda")
+        self.grasp_completed = torch.zeros((self.num_envs,), dtype=torch.bool, device="cuda")
+
+        # self.grasp_manager = SimpleGraspManager(
+    #     env=self,
+    #     gripper_prim_paths=[f"/World/envs/env_{i}/hero_dragon/leg2gripper2_jaw_left" for i in range(self.num_envs)],
+    #     object_prim_paths=[f"/World/envs/env_{i}/hero_wheel/wheel11_out" for i in range(self.num_envs)],
+    # )
 
 
     def pre_physics_step(self, actions):
-        # super().pre_physics_step(actions)
-        
-        # 1. Aggiorna grasp_completed a ogni step
-        if hasattr(self, "grasp_completed"):
-            grasp_success = mdp_events.is_grasp_successful(self)
-            self.grasp_completed |= grasp_success  # aggiorna dove serve
+        new_grasp = mdp_events.is_grasp_successful(self)
+        self.grasp_completed = new_grasp
 
-            # 2. Blocca il gripper se grasp non ancora completato
-            gripper_indices = [7, 8]  # <-- tuoi indici gripper
-            actions[self.grasp_completed == False][:, gripper_indices] = -1.0
+        if self.episode_counter[0] % 1 == 0:
+            env_ids = torch.nonzero(self.grasp_completed).squeeze(-1).tolist()
+            if env_ids:
+                print(f"[GRASP] grasp_completed=True in envs: {env_ids}", flush=True)
 
-    # def pre_physics_step(self, actions: dict):
-    #     self._apply_actions(actions["arm"], self.actions_cfg.arm)
-    #     self._apply_actions(actions["gripper2"], self.actions_cfg.gripper2)
-    #     self._apply_actions(actions["gripper1"], self.actions_cfg.gripper1)
+        contact_tensor = self.scene.sensors["contact_sensor_left1"].data.force_matrix_w  # (N, B, F, 3)
+        magnitudes = torch.norm(contact_tensor, dim=-1)  # (N, B, F)
+
+        for env_id in range(self.num_envs):
+            mag = magnitudes[env_id]
+            if (mag >= 0.01).any():  # soglia minima per evitare stampe vuote
+                print(f"[CONTACT][env {env_id}] force_matrix_w =\n{contact_tensor[env_id].cpu().numpy()}", flush=True)
+
+
+        # print("grip1 actual pos:", self.scene["robot"].data.joint_pos[:, grip1_index])
+        # print("grip1 target pos:", self.scene["robot"].data.joint_target[:, grip1_index])
+
+
+
+
+
+
+
+

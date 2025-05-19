@@ -132,11 +132,17 @@ class JointAction(ActionTerm):
         self._raw_actions[:] = actions
         # apply the affine transformations
         self._processed_actions = self._raw_actions * self._scale + self._offset
+
         # clip actions
         if self.cfg.clip is not None:
             self._processed_actions = torch.clamp(
                 self._processed_actions, min=self._clip[:, :, 0], max=self._clip[:, :, 1]
             )
+            # DEBUG: stampa per tutti i termini
+        # print(f"[ACTION DEBUG] joints: {self._joint_names}")
+        # print(f"  raw input     : {self._raw_actions[0].cpu().numpy()}")
+        # print(f"  scaled+offset : {(self._raw_actions[0] * self._scale + self._offset)[0].cpu().numpy()}")
+        # print(f"  final clipped : {self._processed_actions[0].cpu().numpy()}")
 
     def reset(self, env_ids: Sequence[int] | None = None) -> None:
         self._raw_actions[env_ids] = 0.0

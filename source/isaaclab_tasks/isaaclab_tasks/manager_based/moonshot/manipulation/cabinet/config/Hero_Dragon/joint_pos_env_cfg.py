@@ -8,7 +8,7 @@ import isaaclab.sim as sim_utils
 from isaaclab.sensors.frame_transformer.frame_transformer_cfg import OffsetCfg
 from isaaclab.sensors import FrameTransformerCfg
 from isaaclab_tasks.manager_based.moonshot.descriptions.config.moonbot_cfgs_edo import DRAGON_ARTICULATED_CFG, WHEEL_WITH_HANDLE_CFG
-from dataclasses import MISSING
+
 
 
 
@@ -54,7 +54,7 @@ class HeroDragonGraspEnvCfg(DragonGraspEnvCfg):
                 FrameTransformerCfg.FrameCfg(
                     prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper2_base",
                     name="ee",
-                    offset=OffsetCfg(pos=(0.0, 0.0, 0.055)),
+                    offset=OffsetCfg(pos=(0.0, 0.0, 0.057)),
                 )
             ],
         )
@@ -64,42 +64,52 @@ class HeroDragonGraspEnvCfg(DragonGraspEnvCfg):
         self.actions.arm_action = mdp.JointPositionActionCfg(
         asset_name="robot",
         joint_names=["leg2joint1", "leg2joint2", "leg2joint3", "leg2joint4", "leg2joint5", "leg2joint6", "leg2joint7"],
-        #joint_pos_limits=[(-3.1,3.1),(-3.1,3.1),(-3.1,3.1),(-3.1,3.1),(-3.1,3.1),(-3.1,3.1),(-3.1,3.1)],
-        scale=1,
+        scale=3.1,
+        clip={"leg2joint1": (-3.1, 3.1), "leg2joint2": (-3.1, 3.1), "leg2joint3": (-3.1, 3.1),"leg2joint4": (-3.1, 3.1), "leg2joint5": (-3.1, 3.1), "leg2joint6": (-3.1, 3.1),"leg2joint7": (-3.1, 3.1)},
         )
-        self.actions.arm_action.joint_pos_limits=[(-3.1,3.1),(-3.1,3.1),(-3.1,3.1),(-3.1,3.1),(-3.1,3.1),(-3.1,3.1),(-3.1,3.1)]
 
 
         self.actions.gripper_action = mdp.JointPositionActionCfg(
-        asset_name="robot",
-        joint_names=["leg2grip1", "leg2grip1bis", "leg2grip2", "leg2grip2bis"],
-        #joint_pos_limits=[(0.0, -0.03), (0.0, -0.04)],
-        scale=1,
+            asset_name="robot",
+            joint_names=["leg2grip1", "leg2grip2"],
+            scale=0.029,
+            clip={"leg2grip1": (-0.029, 0.0),"leg2grip2": (-0.029, 0.0),}
         )
-        self.actions.gripper_action.joint_pos_limits=[(-0.025, 0),(-0.025, 0),(-0.025, 0),(-0.025, 0)]
 
-        #self.actions = MultiAgentActionsCfg()
-        # self.actions.arm = mdp.JointPositionActionCfg(
+        # self.actions.gripper_action = mdp.BinaryJointPositionActionCfg(
         #     asset_name="robot",
-        #     joint_names=["leg2joint1", "leg2joint2", "leg2joint3", "leg2joint4", "leg2joint5", "leg2joint6", "leg2joint7"],
-        #     scale=1.0,
+        #     joint_names=["leg2grip1"],
+        #     open_command_expr={"leg2grip1": 0.01,},
+        #     close_command_expr={"leg2grip1": -0.029, },
         # )
-        # self.actions.arm.joint_pos_limits = [(-3.1, 3.1)] * 7
-
-        # self.actions.gripper2 = mdp.JointPositionActionCfg(
+        # self.actions.gripper2_action = mdp.BinaryJointPositionActionCfg(
         #     asset_name="robot",
-        #     joint_names=["leg2grip2", "leg2grip2bis"],
-        #     scale=1.0,
+        #     joint_names=["leg2grip2"],
+        #     open_command_expr={"leg2grip2": 0.01},
+        #     close_command_expr={"leg2grip2": -0.029},
         # )
-        # self.actions.gripper2.joint_pos_limits = [(-0.025, 0.0)] * 2
+        # self.actions.arm.arm_action = mdp.JointPositionActionCfg(  #actions madrl
+        #         asset_name="robot", 
+        #         joint_names=["leg2joint1", "leg2joint2", "leg2joint3", "leg2joint4", "leg2joint5", "leg2joint6", "leg2joint7"],
+        #         scale=1.0,
+        #         clip={"leg2joint1": (-3.1, 3.1), "leg2joint2": (-3.1, 3.1), "leg2joint3": (-3.1, 3.1),
+        #               "leg2joint4": (-3.1, 3.1), "leg2joint5": (-3.1, 3.1), "leg2joint6": (-3.1, 3.1),
+        #               "leg2joint7": (-3.1, 3.1)},
+        #     )
 
-        # self.actions.gripper1 = mdp.JointPositionActionCfg(
-        #     asset_name="robot",
-        #     joint_names=["leg2grip1", "leg2grip1bis"],
-        #     scale=1.0,
-        # )
-        # self.actions.gripper1.joint_pos_limits = [(-0.025, 0.0)] * 2
+        # self.actions.gripper1.gripper1 = mdp.JointPositionActionCfg(
+        #         asset_name="robot",
+        #         joint_names=["leg2grip1", "leg2grip1bis"],
+        #         scale=0.015,
+        #         clip={"leg2grip1": (-0.029, 0.0), "leg2grip1bis": (-0.029, 0.0)},
+        #     )
 
+        # self.actions.gripper2.gripper2 = mdp.JointPositionActionCfg(
+        #         asset_name="robot",
+        #         joint_names=["leg2grip2", "leg2grip2bis"],
+        #         scale=0.015,
+        #         clip={"leg2grip2": (-0.029, 0.0), "leg2grip2bis": (-0.029, 0.0)},
+        #     )
 
 
 
@@ -109,8 +119,11 @@ class HeroDragonGraspEnvCfg_PLAY(HeroDragonGraspEnvCfg):
     def __post_init__(self):
         super().__post_init__()
         self.scene.num_envs = 32
+    
         self.scene.env_spacing = 6
 
         self.scene.terrain.max_init_terrain_level = None
         
         self.observations.policy.enable_corruption = False
+        self.viewer.resolution = (2540,1440)
+        self.viewer.eye = (0.8, 2, 0.8) # basic view

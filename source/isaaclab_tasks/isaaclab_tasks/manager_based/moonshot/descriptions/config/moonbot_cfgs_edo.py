@@ -22,7 +22,8 @@ Joint velocity limits are in rad/s (revolute), m/s (prismatic)
 Joint effort limits are in N*m (revolute), N (prismatic)
 
 '''
-scale=5
+scale=20
+scale2=300
 
 DRAGON_ARTICULATED_CFG = ArticulationCfg(
     prim_path="{ENV_REGEX_NS}/hero_dragon",
@@ -47,94 +48,110 @@ DRAGON_ARTICULATED_CFG = ArticulationCfg(
     ),
     init_state=ArticulationCfg.InitialStateCfg(
     pos=(0.0, 0.0, 0.3),
-    joint_pos={"leg2grip1":-0.025, "leg2grip1bis":-0.025, "leg2joint1":0.0, "leg2joint2":math.radians(135), "leg2joint3":0.0, "leg2joint4":math.radians(180), "leg2joint5":0.0, "leg2joint6":math.radians(180), "leg2joint7":0.0, "leg2grip2":0.0, "leg2grip2bis":0.0 },
+    joint_pos={"leg2grip1":-0.029, "leg2joint1":0.0, "leg2joint2":math.radians(135), "leg2joint3":0.0, "leg2joint4":math.radians(180), 
+               "leg2joint5":0.0, "leg2joint6":math.radians(170), "leg2joint7":0.0, "leg2grip2":0.0,"leg2grip2bis":0.0},
     ),
 
-    # "wheel.*": 0.0,
-    #            "leg1joint[1-3]": 0.0,
-    #            "leg1joint4": math.pi/2,
-    #            "leg1joint[5-7]": 0.0},
-
-    soft_joint_pos_limit_factor = 0.1,
+    soft_joint_pos_limit_factor = 1.0,
     
     actuators = {
 
     "leg2grip1": ImplicitActuatorCfg(
         joint_names_expr=["leg2grip1"],
-        effort_limit_sim=300,         # N (per prismatico)
-        velocity_limit_sim=30,       # m/s
-        stiffness=2000,             # per mantenere posizione target
-        damping=5,                 # per evitare vibrazioni
+        effort_limit_sim=50,
+        velocity_limit_sim=5*0.15,
+        stiffness = 3000,
+        damping = 5,                 # per evitare vibrazioni
         ),
-    "leg2grip1bis": ImplicitActuatorCfg(
-        joint_names_expr=["leg2grip2bis"],
-        effort_limit_sim=300,         # N (per prismatico)
-        velocity_limit_sim=30,       # m/s
-        stiffness=2000,
-        damping=5,
-    ),   
+
+
+    # "leg2grip1": ImplicitActuatorCfg(
+    #     joint_names_expr=["leg2grip1"],
+    #     effort_limit_sim=10,
+    #     velocity_limit_sim=scale*0.15,
+    #     stiffness=3000,
+    #     damping=160,
+    # ),
+
+    "leg2grip1bis": ImplicitActuatorCfg( #avtuator passivo che tanto e mimic
+        joint_names_expr=["leg2grip1bis"],
+        effort_limit_sim=50,
+        velocity_limit_sim=5*0.15,
+        stiffness = 3000,
+        damping = 5, 
+    ), 
+
+
     "leg2joint1": ImplicitActuatorCfg(
         joint_names_expr=["leg2joint1"],
-        effort_limit_sim=scale*136.11,
-        velocity_limit_sim=scale*0.5,
-        stiffness = scale*0.966,
-        damping = scale*0.234,
+        effort_limit_sim=scale2*136.11,
+        velocity_limit_sim=5*0.15,
+        stiffness = scale2*0.966,
+        damping = scale2*0.234,
     ),
     "leg2joint2": ImplicitActuatorCfg(
         joint_names_expr=["leg2joint2"],
-        effort_limit_sim=scale*136.11,
-        velocity_limit_sim=scale*0.5,
-        stiffness = scale*0.966,
-        damping = scale*0.234,
+        effort_limit_sim=scale2*136.11,
+        velocity_limit_sim=5*0.15,
+        stiffness = scale2*0.966,
+        damping = scale2*0.234,
     ),
     "leg2joint3": ImplicitActuatorCfg(
         joint_names_expr=["leg2joint3"],
-        effort_limit_sim=scale*136.11,
-        velocity_limit_sim=scale*0.5,
-        stiffness = scale*0.966,
-        damping =scale* 0.234,
+        effort_limit_sim=scale2*136.11,
+        velocity_limit_sim=5*0.15,
+        stiffness = scale2*0.966,
+        damping =scale2* 0.234,
     ),
     "leg2joint4": ImplicitActuatorCfg(
         joint_names_expr=["leg2joint4"],
-        effort_limit_sim=scale*136.11,
-        velocity_limit_sim=scale*0.5,
-        stiffness = scale*0.966,
-        damping = scale*0.234,
+        effort_limit_sim=scale2*136.11,
+        velocity_limit_sim=5*0.15,
+        stiffness = scale2*0.966,
+        damping = scale2*0.234,
     ),
     "leg2joint5": ImplicitActuatorCfg(
         joint_names_expr=["leg2joint5"],
         effort_limit_sim=scale*136.11,
-        velocity_limit_sim=scale*0.5,
+        velocity_limit_sim=5*0.15,
         stiffness = scale*0.966,
         damping = scale*0.234,
     ),
     "leg2joint6": ImplicitActuatorCfg(
         joint_names_expr=["leg2joint6"],
         effort_limit_sim=scale*136.11,
-        velocity_limit_sim=scale*0.5,
+        velocity_limit_sim=5*0.15,
         stiffness =scale*0.966,
         damping = scale*0.234,
     ),
     "leg2joint7": ImplicitActuatorCfg(
         joint_names_expr=["leg2joint7"],
-        effort_limit_sim=scale*136.11,
-        velocity_limit_sim=scale*0.5,
-        stiffness = scale*0.966,
-        damping = scale*0.234,
+        effort_limit_sim=136.11,
+        velocity_limit_sim=5*0.15,
+        stiffness =0.966,
+        damping = 0.234,
     ),
     "leg2grip2": ImplicitActuatorCfg(
-        joint_names_expr=["leg2grip1"],
-        effort_limit_sim=3.3,         # N (per prismatico)
-        velocity_limit_sim=30,       # m/s
-        stiffness=2000,             # per mantenere posizione target
-        damping=5,                 # per evitare vibrazioni
+        joint_names_expr=["leg2grip2"],
+        effort_limit_sim=50,
+        velocity_limit_sim=5*0.15,
+        stiffness =3000,
+        damping =5,           # per evitare vibrazioni
         ),
+    
+    # "leg2grip2": ImplicitActuatorCfg(
+    #     joint_names_expr=["leg2grip2"],
+    #     effort_limit_sim=10,
+    #     velocity_limit_sim=2,
+    #     stiffness=3000,
+    #     damping=160,
+    # ),
     "leg2grip2bis": ImplicitActuatorCfg(
         joint_names_expr=["leg2grip2bis"],
-        effort_limit_sim=3.3,         # N (per prismatico)
-        velocity_limit_sim=30,       # m/s
-        stiffness=2000,
-        damping=5,
+        effort_limit_sim=50,
+        velocity_limit_sim=5*0.15,
+        stiffness =3000,
+        damping = 5,
     ),
     },
 )
@@ -143,9 +160,10 @@ WHEEL_WITH_HANDLE_CFG = ArticulationCfg(
     prim_path="{ENV_REGEX_NS}/hero_wheel",
     spawn=sim_utils.UsdFileCfg(
         usd_path=ISAAC_LAB_PATH + "/source/isaaclab_tasks/isaaclab_tasks/manager_based/moonshot/descriptions/usd/robot/HERO_wheel/hero_wheel.usd",
+        activate_contact_sensors=True,
     ),
     init_state=ArticulationCfg.InitialStateCfg(
-        pos=(1.7, 0.0, 0.4),  # adatta alla scena
+        pos=(1.6, 0.0, 0.4),  # adatta alla scena
         rot=(0.0, 0.0, 0.0, 1.0),
         joint_pos={".*": 0.0}
     ),

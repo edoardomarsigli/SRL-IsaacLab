@@ -18,6 +18,7 @@ import cli_args  # isort: skip
 parser = argparse.ArgumentParser(description="Train an RL agent with RSL-RL.")
 parser.add_argument("--video", action="store_true", default=False, help="Record videos during training.")
 parser.add_argument("--video_length", type=int, default=200, help="Length of the recorded video (in steps).")
+# parser.add_argument("--num_episodes", type=int, default=1, help="How many episodes to record in the video.")
 parser.add_argument(
     "--disable_fabric", action="store_true", default=False, help="Disable fabric and use USD I/O operations."
 )
@@ -99,7 +100,7 @@ def main():
     if args_cli.video:
         video_kwargs = {
             "video_folder": os.path.join(log_dir, "videos", "play"),
-            "step_trigger": lambda step: step == 0,
+            "step_trigger": lambda step: step %200 == 0,
             "video_length": args_cli.video_length,
             "disable_logger": True,
         }
@@ -150,6 +151,33 @@ def main():
         sleep_time = dt - (time.time() - start_time)
         if args_cli.real_time and sleep_time > 0:
             time.sleep(sleep_time)
+
+    # total_steps = 0
+    # episodes_played = 0
+
+    # while simulation_app.is_running() and episodes_played < args_cli.num_episodes:
+    #     obs, _ = env.reset()  # reset env for new episode
+    #     done = torch.zeros(env.num_envs, dtype=torch.bool)
+
+    #     while simulation_app.is_running() and not done.any():
+    #         start_time = time.time()
+    #         with torch.inference_mode():
+    #             actions = policy(obs)
+    #             obs, _, done, _ = env.step(actions)
+
+    #         total_steps += 1
+    #         if args_cli.video and total_steps >= args_cli.video_length:
+    #             print(f"[INFO] Video reached {args_cli.video_length} steps. Stopping.")
+    #             simulation_app.update()  # ensure last frame is rendered
+    #             break
+
+    #         # real-time control
+    #         sleep_time = dt - (time.time() - start_time)
+    #         if args_cli.real_time and sleep_time > 0:
+    #             time.sleep(sleep_time)
+
+    #     episodes_played += 1
+
 
     # close the simulator
     env.close()

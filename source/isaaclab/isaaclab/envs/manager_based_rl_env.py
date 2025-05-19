@@ -21,6 +21,9 @@ from isaaclab.ui.widgets import ManagerLiveVisualizer
 from .common import VecEnvStepReturn
 from .manager_based_env import ManagerBasedEnv
 from .manager_based_rl_env_cfg import ManagerBasedRLEnvCfg
+from isaaclab_tasks.manager_based.moonshot.manipulation.cabinet.mdp.rewards import get_curriculum_thresholds
+
+
 
 
 class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
@@ -112,10 +115,14 @@ class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
         # and the reward manager needs to know the termination manager
         # -- command manager
         self.command_manager: CommandManager = CommandManager(self.cfg.commands, self)
+        print("🔧 ACTION CONFIG IN CFG:", self.cfg.actions)
+
         print("[INFO] Command Manager: ", self.command_manager)
 
         # call the parent class to load the managers for observations and actions.
         super().load_managers()
+        print("✅ Action manager active terms:", self.action_manager.active_terms)
+
 
         # prepare the managers
         # -- termination manager
@@ -172,6 +179,16 @@ class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
         """
         # process actions
         self.action_manager.process_action(action.to(self.device))
+        # print("🎯 AZIONI IN INGRESSO ALL’ENV:", action[0].cpu().numpy())
+
+
+
+        # 🔧 FIX: chiama pre_physics_step se definito
+        if hasattr(self, "pre_physics_step"):
+            self.pre_physics_step(self.action_manager.process_action)
+            # print("🔄 pre_physics_step called")
+
+
 
         self.recorder_manager.record_pre_step()
 
@@ -184,6 +201,22 @@ class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
             self._sim_step_counter += 1
             # set actions into buffers
             self.action_manager.apply_action()
+
+            if self._sim_step_counter % 100 == 0:  # ogni 100 step
+                robot = self.scene["robot"]
+                joint_names = robot.data.joint_names
+
+                for name in ["leg2grip1", "leg2grip2"]:
+                    if name in joint_names:
+                        idx = joint_names.index(name)
+                        actual = robot.data.joint_pos[:, idx]
+                        target = robot.data.joint_pos_target[:, idx]
+                        print(f"[DEBUG][{name}] pos: {actual[0].item():.4f}, target: {target[0].item():.4f}", flush=True)
+
+
+
+
+
             # set actions into simulator
             self.scene.write_data_to_sim()
             # simulate
@@ -239,8 +272,34 @@ class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
         # note: done after reset to get the correct observations for reset envs
         self.obs_buf = self.observation_manager.compute()
 
+
+
+                # Logga solo ogni 5 episodi per env
+        # if not hasattr(self, "_last_logged_episode"):
+        #     self._last_logged_episode = torch.full((self.num_envs,), -1, device="cuda", dtype=torch.long)
+
+        # for env_id in range(self.num_envs):
+        #     episode = self.episode_counter[env_id].item()
+        #     if episode % 1 == 0 and self._last_logged_episode[env_id].item() != episode:
+        #         self._last_logged_episode[env_id] = episode
+        #         # Log solo per questo env
+        #         print(f"▶️ Logging thresholds for env {env_id}")
+        #         print(f"  Episode {episode}")
+        #         print(f"    align_th: {get_curriculum_thresholds(self)[0][env_id].item():.4f}")
+        #         print(f"    align_th1: {get_curriculum_thresholds(self)[1][env_id].item():.4f}")
+        #         print(f"    zy_th: {get_curriculum_thresholds(self)[2][env_id].item():.4f}")
+        #         print(f"    zy_th1: {get_curriculum_thresholds(self)[3][env_id].item():.4f}")
+        #         print(f"    x_th: {get_curriculum_thresholds(self)[4][env_id].item():.4f}")
+        #         print(f"    grasp_th: {get_curriculum_thresholds(self)[5][env_id].item():.4f}")
+
+
+
+
         # return observations, rewards, resets and extras
         return self.obs_buf, self.reward_buf, self.reset_terminated, self.reset_time_outs, self.extras
+    
+        
+        
 
     def render(self, recompute: bool = False) -> np.ndarray | None:
         """Run rendering without stepping through the physics.
@@ -391,3 +450,11 @@ class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
 
         # reset the episode length buffer
         self.episode_length_buf[env_ids] = 0
+
+        if hasattr(self, "episode_counter"):
+            self.episode_counter[env_ids] += 1
+
+            # Controlla se per qualche env si è raggiunto un multiplo di 5
+            for env_id in env_ids:
+                if self.episode_counter[env_id].item() % 100 == 0:
+                    print(f"▶️ Env {env_id.item()} episode counter: {self.episode_counter[env_id].item()}")

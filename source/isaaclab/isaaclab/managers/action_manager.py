@@ -347,6 +347,32 @@ class ActionManager(ManagerBase):
         for term in self._terms.values():
             term.apply_actions()
 
+
+
+    # def apply_action(self) -> None:
+    #     for term in self._terms.values():
+    #         term.apply_actions()
+
+    #     # === Forzatura mimic ===
+    #     try:
+    #         robot_asset = self._env.scene["robot"]
+    #         joint_names = robot_asset.data.joint_names
+
+    #         grip1_idx = joint_names.index("leg2grip1")
+    #         grip1bis_idx = joint_names.index("leg2grip1bis")
+    #         grip2_idx = joint_names.index("leg2grip2")
+    #         grip2bis_idx = joint_names.index("leg2grip2bis")
+
+    #         # Copia i target position dei giunti controllati nei mimic
+    #         robot_asset.data.joint_pos_target[:, grip1bis_idx] = robot_asset.data.joint_pos_target[:, grip1_idx]
+    #         robot_asset.data.joint_pos_target[:, grip2bis_idx] = robot_asset.data.joint_pos_target[:, grip2_idx]
+
+    #     except Exception as e:
+    #         print(f"[WARNING] Failed to force mimic joints: {e}")
+
+
+
+
     def get_term(self, name: str) -> ActionTerm:
         """Returns the action term with the specified name.
 
