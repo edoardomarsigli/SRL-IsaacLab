@@ -47,34 +47,96 @@ class HeroDragonGraspEnvCfg(DragonGraspEnvCfg):
         self.scene.robot=DRAGON_ARTICULATED_CFG
         self.scene.wheel_with_handle=WHEEL_WITH_HANDLE_CFG
         self.scene.ee_frame=FrameTransformerCfg(
-            prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper2_base",
+            prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper2",
             debug_vis=True,
             visualizer_cfg=FRAME_MARKER_SMALL_CFG.replace(prim_path="/Visuals/EEFrame"),
             target_frames=[
                 FrameTransformerCfg.FrameCfg(
-                    prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper2_base",
+                    prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper2",
                     name="ee",
-                    offset=OffsetCfg(pos=(0.0, 0.0, 0.057)),
+                    offset=OffsetCfg(pos=(0.0, 0.0, 0.0)),
                 )
             ],
         )
-
+        # self.scene.ee_frame=FrameTransformerCfg(
+        #     prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper2_base",
+        #     debug_vis=True,
+        #     visualizer_cfg=FRAME_MARKER_SMALL_CFG.replace(prim_path="/Visuals/EEFrame"),
+        #     target_frames=[
+        #         FrameTransformerCfg.FrameCfg(
+        #             prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper2_base",
+        #             name="ee",
+        #             offset=OffsetCfg(pos=(0.0, 0.0, 0.057)),
+        #         )
+        #     ],
+        # )
 
         # Set Actions for the specific robot type (franka)
-        self.actions.arm_action = mdp.JointPositionActionCfg(
-        asset_name="robot",
-        joint_names=["leg2joint1", "leg2joint2", "leg2joint3", "leg2joint4", "leg2joint5", "leg2joint6", "leg2joint7"],
-        scale=3.1,
-        clip={"leg2joint1": (-3.1, 3.1), "leg2joint2": (-3.1, 3.1), "leg2joint3": (-3.1, 3.1),"leg2joint4": (-3.1, 3.1), "leg2joint5": (-3.1, 3.1), "leg2joint6": (-3.1, 3.1),"leg2joint7": (-3.1, 3.1)},
-        )
 
+        # self.actions.arm_action = mdp.JointPositionActionCfg(
+        # asset_name="robot",
+        # joint_names=["leg2joint1", "leg2joint2", "leg2joint3", "leg2joint4", "leg2joint5", "leg2joint6", "leg2joint7"],
+        # scale=3.1,
+        # clip={"leg2joint1": (-3.1, 3.1), "leg2joint2": (-3.1, 3.1), "leg2joint3": (-3.1, 3.1),
+        #       "leg2joint4": (-3.1, 3.1), "leg2joint5": (-3.1, 3.1), "leg2joint6": (-3.1, 3.1),"leg2joint7": (-3.1, 3.1)},
+        # )
 
-        self.actions.gripper_action = mdp.JointPositionActionCfg(
+        self.actions.j1_action = mdp.JointPositionActionCfg(
             asset_name="robot",
-            joint_names=["leg2grip1", "leg2grip2"],
-            scale=0.029,
-            clip={"leg2grip1": (-0.029, 0.0),"leg2grip2": (-0.029, 0.0),}
+            joint_names=["leg2joint1"],
+            scale=3.1,
+            clip={"leg2joint1": (-3.1, 3.1)},
         )
+
+        self.actions.j2_action = mdp.JointPositionActionCfg(
+            asset_name="robot",
+            joint_names=["leg2joint2"],
+            scale=3.1,
+            clip={"leg2joint2": (-3.1, 3.1)},
+        )
+
+        self.actions.j3_action = mdp.JointPositionActionCfg(
+            asset_name="robot",
+            joint_names=["leg2joint3"],
+            scale=3.1,
+            clip={"leg2joint3": (-3.1, 3.1)},
+        )
+
+        self.actions.j4_action = mdp.JointPositionActionCfg(
+            asset_name="robot",
+            joint_names=["leg2joint4"],
+            scale=3.1,
+            clip={"leg2joint4": (-3.1, 3.1)},
+        )
+
+        self.actions.j5_action = mdp.JointPositionActionCfg(
+            asset_name="robot",
+            joint_names=["leg2joint5"],
+            scale=3.1,
+            clip={"leg2joint5": (-3.1, 3.1)},
+        )
+
+        self.actions.j6_action = mdp.JointPositionActionCfg(
+            asset_name="robot",
+            joint_names=["leg2joint6"],
+            scale=3.1,
+            clip={"leg2joint6": (-3.1, 3.1)},
+        )
+
+        self.actions.j7_action = mdp.JointPositionActionCfg(
+            asset_name="robot",
+            joint_names=["leg2joint7"],
+            scale=3.1,
+            clip={"leg2joint7": (-3.1, 3.1)},
+        )
+
+
+        # self.actions.gripper_action = mdp.JointPositionActionCfg(
+        #     asset_name="robot",
+        #     joint_names=["leg2grip1", "leg2grip2"],
+        #     scale=1,
+        #     clip={"leg2grip1": (-0.029, 0.0),"leg2grip2": (-0.029, 0.0),}
+        # )
 
         # self.actions.gripper_action = mdp.BinaryJointPositionActionCfg(
         #     asset_name="robot",
@@ -88,28 +150,7 @@ class HeroDragonGraspEnvCfg(DragonGraspEnvCfg):
         #     open_command_expr={"leg2grip2": 0.01},
         #     close_command_expr={"leg2grip2": -0.029},
         # )
-        # self.actions.arm.arm_action = mdp.JointPositionActionCfg(  #actions madrl
-        #         asset_name="robot", 
-        #         joint_names=["leg2joint1", "leg2joint2", "leg2joint3", "leg2joint4", "leg2joint5", "leg2joint6", "leg2joint7"],
-        #         scale=1.0,
-        #         clip={"leg2joint1": (-3.1, 3.1), "leg2joint2": (-3.1, 3.1), "leg2joint3": (-3.1, 3.1),
-        #               "leg2joint4": (-3.1, 3.1), "leg2joint5": (-3.1, 3.1), "leg2joint6": (-3.1, 3.1),
-        #               "leg2joint7": (-3.1, 3.1)},
-        #     )
 
-        # self.actions.gripper1.gripper1 = mdp.JointPositionActionCfg(
-        #         asset_name="robot",
-        #         joint_names=["leg2grip1", "leg2grip1bis"],
-        #         scale=0.015,
-        #         clip={"leg2grip1": (-0.029, 0.0), "leg2grip1bis": (-0.029, 0.0)},
-        #     )
-
-        # self.actions.gripper2.gripper2 = mdp.JointPositionActionCfg(
-        #         asset_name="robot",
-        #         joint_names=["leg2grip2", "leg2grip2bis"],
-        #         scale=0.015,
-        #         clip={"leg2grip2": (-0.029, 0.0), "leg2grip2bis": (-0.029, 0.0)},
-        #     )
 
 
 

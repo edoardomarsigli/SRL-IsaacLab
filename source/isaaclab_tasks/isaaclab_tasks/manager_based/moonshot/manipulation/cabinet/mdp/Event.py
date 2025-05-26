@@ -149,7 +149,7 @@ def collision_termination(env: ManagerBasedRLEnv, threshold: float) -> torch.Ten
         contact_forces4 = sensor4.data.force_matrix_w  # shape: (N, B, F, 3)
         magnitude4 = torch.norm(contact_forces4, dim=-1).sum(dim=(-1, -2))  # sum across bodies and filters
 
-        mask = ((magnitude > threshold)|(magnitude2 > threshold)|(magnitude3 > threshold)|(magnitude4 > threshold)  ).any(dim=-1).any(dim=-1)  # (N,)
+        mask = ((magnitude > threshold)|(magnitude2 > threshold)|(magnitude3 > threshold)|(magnitude4 > threshold)).any(dim=-1).any(dim=-1)  # (N,)
         return mask
     except Exception:
         return torch.zeros(env.num_envs, dtype=torch.bool, device=env.device)

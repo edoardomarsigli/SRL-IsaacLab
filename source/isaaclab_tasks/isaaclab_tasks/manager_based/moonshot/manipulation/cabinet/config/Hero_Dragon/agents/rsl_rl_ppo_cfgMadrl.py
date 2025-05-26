@@ -9,7 +9,7 @@ from isaaclab_rl.rsl_rl import RslRlOnPolicyRunnerCfg, RslRlPpoActorCriticCfg, R
 
 
 @configclass
-class HeroDragonGraspPPORunnerCfg(RslRlOnPolicyRunnerCfg):
+class HeroDragonGraspPPORunnerCfgMadrl(RslRlOnPolicyRunnerCfg):
     num_steps_per_env = 256
     max_iterations = 20000
     save_interval = 1000
@@ -17,15 +17,15 @@ class HeroDragonGraspPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     empirical_normalization = False
     policy = RslRlPpoActorCriticCfg(
         init_noise_std=1.0,
-        actor_hidden_dims=[256, 128, 64],
-        critic_hidden_dims=[256, 128],
+        actor_hidden_dims=[128, 64],
+        critic_hidden_dims=[128, 64],
         activation="elu",
     )
     algorithm = RslRlPpoAlgorithmCfg(
         value_loss_coef=2.0,
         use_clipped_value_loss=True,
         clip_param=0.2,
-        entropy_coef=2e-2,
+        entropy_coef=1e-2,
         num_learning_epochs=5,
         num_mini_batches=128,
         learning_rate=5.0e-4,

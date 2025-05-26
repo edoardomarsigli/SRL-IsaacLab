@@ -7,7 +7,7 @@ from isaaclab_tasks.manager_based.moonshot.manipulation.cabinet.mdp.rewards impo
 
 
 
-class HeroDragonGraspEnv(ManagerBasedRLEnv):
+class HeroDragonGraspEnvMadrl(ManagerBasedRLEnv):
 
     def __init__(self, cfg, **kwargs):
         super().__init__(cfg, **kwargs)
@@ -35,13 +35,13 @@ class HeroDragonGraspEnv(ManagerBasedRLEnv):
             if env_ids:
                 print(f"[GRASP] grasp_completed=True in envs: {env_ids}", flush=True)
 
-        # contact_tensor = self.scene.sensors["contact_sensor_left1"].data.force_matrix_w  # (N, B, F, 3)
-        # magnitudes = torch.norm(contact_tensor, dim=-1)  # (N, B, F)
+        contact_tensor = self.scene.sensors["contact_sensor_left1"].data.force_matrix_w  # (N, B, F, 3)
+        magnitudes = torch.norm(contact_tensor, dim=-1)  # (N, B, F)
 
-        # for env_id in range(self.num_envs):
-        #     mag = magnitudes[env_id]
-        #     if (mag >= 0.01).any():  # soglia minima per evitare stampe vuote
-        #         print(f"[CONTACT][env {env_id}] force_matrix_w =\n{contact_tensor[env_id].cpu().numpy()}", flush=True)
+        for env_id in range(self.num_envs):
+            mag = magnitudes[env_id]
+            if (mag >= 0.01).any():  # soglia minima per evitare stampe vuote
+                print(f"[CONTACT][env {env_id}] force_matrix_w =\n{contact_tensor[env_id].cpu().numpy()}", flush=True)
 
 
         # print("grip1 actual pos:", self.scene["robot"].data.joint_pos[:, grip1_index])

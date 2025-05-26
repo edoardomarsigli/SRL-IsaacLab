@@ -38,3 +38,16 @@ gym.register(
     },
     disable_env_checker=True,
 )
+
+
+gym.register(
+    id="Manipulation-HeroDragon-Play-v0-madrl",
+    entry_point="isaaclab_tasks.manager_based.moonshot.manipulation.cabinet.HeroDragonGraspEnv:HeroDragonGraspEnvMadrl",
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.joint_pos_env_cfg:HeroDragonGraspEnvCfg_PLAYMadrl",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:HeroDragonGraspPPORunnerCfgMadrl",
+        "rl_games_cfg_entry_point": f"{agents.__name__}:rl_games_ppo_cfg.yaml",
+        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_ppo_cfgMadrl.yaml",
+    },
+    disable_env_checker=True,
+)

@@ -202,21 +202,6 @@ class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
             # set actions into buffers
             self.action_manager.apply_action()
 
-            if self._sim_step_counter % 100 == 0:  # ogni 100 step
-                robot = self.scene["robot"]
-                joint_names = robot.data.joint_names
-
-                for name in ["leg2grip1", "leg2grip2"]:
-                    if name in joint_names:
-                        idx = joint_names.index(name)
-                        actual = robot.data.joint_pos[:, idx]
-                        target = robot.data.joint_pos_target[:, idx]
-                        print(f"[DEBUG][{name}] pos: {actual[0].item():.4f}, target: {target[0].item():.4f}", flush=True)
-
-
-
-
-
             # set actions into simulator
             self.scene.write_data_to_sim()
             # simulate
@@ -271,6 +256,34 @@ class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
         # -- compute observations
         # note: done after reset to get the correct observations for reset envs
         self.obs_buf = self.observation_manager.compute()
+
+
+        robot = self.scene["robot"]
+        joint_names = robot.data.joint_names
+
+        # with torch.no_grad():
+        #         robot.data.joint_pos[:, joint_names.index("leg2joint7")] = torch.tensor(0.0, device=robot.data.joint_pos.device)
+
+
+        # if self._sim_step_counter % 1 == 0:  # ogni 100 step
+        #     robot = self.scene["robot"]
+        #     joint_names = robot.data.joint_names
+
+        #     # for name in ["leg2grip1", "leg2grip2"]:
+        #     #     if name in joint_names:
+        #     #         idx = joint_names.index(name)
+        #     #         actual = robot.data.joint_pos[:, idx]
+        #     #         target = robot.data.joint_pos_target[:, idx]
+        #     #         print(f"[DEBUG][{name}] pos: {actual[0].item():.4f}, target: {target[0].item():.4f}", flush=True)
+
+        #     if "leg2joint7" in joint_names:
+        #         idx = joint_names.index("leg2joint7")
+        #         actual = robot.data.joint_pos[:, idx]
+        #         target = robot.data.joint_pos_target[:, idx]
+        #         print(f"[DEBUG][leg2joint7] pos: {actual[0].item():.4f}, target: {target[0].item():.4f}", flush=True)
+
+
+
 
 
 
@@ -454,7 +467,10 @@ class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
         if hasattr(self, "episode_counter"):
             self.episode_counter[env_ids] += 1
 
-            # Controlla se per qualche env si è raggiunto un multiplo di 5
-            for env_id in env_ids:
-                if self.episode_counter[env_id].item() % 100 == 0:
-                    print(f"▶️ Env {env_id.item()} episode counter: {self.episode_counter[env_id].item()}")
+            # Controlla se almeno uno ha raggiunto un multiplo di 100
+            # if (self.episode_counter % 100 == 0).any():
+            #     print("▶️ Episode counters:")
+            #     for i, count in enumerate(self.episode_counter.tolist()):
+            #         print(f"  - Env {i}: {count}")
+
+

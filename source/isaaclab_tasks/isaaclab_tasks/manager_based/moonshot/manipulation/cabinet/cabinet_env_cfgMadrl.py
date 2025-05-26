@@ -227,67 +227,6 @@ class DragonGraspSceneCfg(InteractiveSceneCfg):
     )
 
 
-##
-# MDP settings
-##
-
-
-@configclass
-class ActionsCfg:
-    """Action specifications for the MDP."""
-    j1_action: mdp.JointPositionActionCfg = MISSING
-    j2_action: mdp.JointPositionActionCfg = MISSING
-    j3_action: mdp.JointPositionActionCfg = MISSING
-    j4_action: mdp.JointPositionActionCfg = MISSING    
-    j5_action: mdp.JointPositionActionCfg = MISSING
-    j6_action: mdp.JointPositionActionCfg = MISSING
-    j7_action: mdp.JointPositionActionCfg = MISSING
-
-
-    # g1_action: mdp.JointPositionActionCfg = MISSING
-    # g2_action: mdp.JointPositionActionCfg = MISSING
-
-
-
-
-
-
-@configclass
-class ObservationsCfg:
-    """Observation specifications for the MDP."""
-
-    @configclass
-    class PolicyCfg(ObsGroup):
-        """Observations for policy group."""
-
-        joint_pos = ObsTerm(func=mdp.joint_pos_rel)
-        joint_vel = ObsTerm(func=mdp.joint_vel_rel)
-
-        rel_ee__distance = ObsTerm(func=mdp.rel_ee__distance)
-
-        ee_pos = ObsTerm(func=mdp.ee_pos)
-
-        handle_pos = ObsTerm(func=mdp.handle_pos)
-
-        # rel_rf__distance = ObsTerm(func=mdp.rel_rf__distance)
-
-        # rel_lf__distance = ObsTerm(func=mdp.rel_lf__distance)
-
-        ee_quat = ObsTerm(func=mdp.ee_quat)
-
-        gripper1= ObsTerm(func=mdp.gripper1_pos)
-        gripper2= ObsTerm(func=mdp.gripper2_pos)
-
-
-        actions = ObsTerm(func=mdp.last_action) #da aggiungere piu avanti
-
-        def __post_init__(self):
-            self.enable_corruption = True
-            self.concatenate_terms = True
-
-    # observation groups
-    policy: PolicyCfg = PolicyCfg()
-
 
 @configclass
 class EventCfg:
@@ -306,8 +245,6 @@ class EventCfg:
     )
 
 
-    # reset_all = EventTerm(func=mdp_events.reset_scene_to_default, mode="reset")
-
     reset_all = EventTerm(func=mdp.reset_scene_to_default, mode="reset")
 
     reset_robot_joints = EventTerm(     #serve per il reset della posizione del robot in posizione casuale intorno alla posizione iniziale
@@ -320,101 +257,98 @@ class EventCfg:
     )
 
 
-# @configclass   #reward senza curriculum
-# class RewardsCfg:
-#     """Reward terms for the MDP."""
+##MADRL
 
-#     #approach_ee_handle = RewTerm(func=mdp.approach_ee_handle, weight=2.0, params={"threshold": 0.03})
+from isaaclab.managers import MultiAgentActionsCfg
 
-#     align_ee_handle = RewTerm(func=mdp.align_ee_handle, weight=2, params={"align_threshold": 0.9})
+@configclass
+class ActionsCfgMADRL(MultiAgentActionsCfg):  #actions per madrl
+    """Multi-agent action configuration for MADRL."""
+    @configclass
+    class ArmActionsCfg:
+        arm_action: mdp.JointPositionActionCfg = MISSING
 
-#     approach_zy_alignment = RewTerm(func=mdp.approach_zy_alignment, weight=1, params={"zy_threshold": 0.05, "align_threshold1": 0.9})
+    @configclass
+    class Gripper1ActionsCfg:
+        gripper1: mdp.JointPositionActionCfg = MISSING
 
-#     approach_x_conditional_on_yz = RewTerm(func=mdp.approach_x_conditional_on_yz, weight=1, params={"zy_threshold1": 0.05, 'x_threshold': 0.1})
+    @configclass
+    class Gripper2ActionsCfg:
+        gripper2: mdp.JointPositionActionCfg = MISSING
 
-#     penalize_low_joints = RewTerm(func=mdp.penalize_low_joints, weight=0.2, params={"threshold": 0.2})
-
-
-#     # approach_gripper_handle = RewTerm(func=mdp.approach_gripper_handle, weight=5.0, params={"offset": MISSING})
-#     # grasp_handle = RewTerm(
-#     #     func=mdp.grasp_handle,
-#     #     weight=1,
-#     #     params={
-#     #         "grasp_threshold": 0.05
-#     #     },
-#     # )
+    arm = ArmActionsCfg()
+    gripper1 = Gripper1ActionsCfg()
+    gripper2 = Gripper2ActionsCfg()
 
 
-#     # 4. Penalize actions for cosmetic reasons
-#     action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.05)
-#     joint_vel = RewTerm(func=mdp.joint_vel_l2, weight=-0.005)
+@configclass
+class ObservationsCfgMADRL:   #osservazioni per madrl
+    class ArmPolicyCfg(ObsGroup):
+        joint_pos = ObsTerm(func=mdp.joint_pos_rel)
+        joint_vel = ObsTerm(func=mdp.joint_vel_rel)
+        rel_ee__distance = ObsTerm(func=mdp.rel_ee__distance)
+        ee_quat = ObsTerm(func=mdp.ee_quat)
+        ee_pos = ObsTerm(func=mdp.ee_pos)
+        handle_pos = ObsTerm(func=mdp.handle_pos)
+
+    class Gripper2PolicyCfg(ObsGroup):
+        lf_dist = ObsTerm(func=mdp.rel_lf__distance)
+        rf_dist = ObsTerm(func=mdp.rel_rf__distance)
+        gripper2= ObsTerm(func=mdp.gripper2_pos)
+
+    class Gripper1PolicyCfg(ObsGroup):
+        gripper1= ObsTerm(func=mdp.gripper1_pos)
+
+    arm: ArmPolicyCfg = ArmPolicyCfg()
+    gripper2: Gripper2PolicyCfg = Gripper2PolicyCfg()
+    gripper1: Gripper1PolicyCfg = Gripper1PolicyCfg()
+
+@configclass #reward per madrl
+class RewardsCfgMADRL:
+    class ArmRewards:
+        align_ee_handlez = RewTerm(func=mdp.align_ee_handle_z_curriculum_wrapped, weight=1)
+
+        align_ee_handlex = RewTerm(func=mdp.align_ee_handle_x_curriculum_wrapped, weight=1)
+
+        approach_zy_alignment = RewTerm(func=mdp.approach_zy_alignment_curriculum_wrapped, weight=1)
+
+        approach_x_conditional_on_yz = RewTerm(func=mdp.approach_x_conditional_on_yz_curriculum_wrapped, weight=1)
+
+        penalize_low_joints = RewTerm(func=mdp.penalize_low_joints, weight=1, params={"threshold": 0.2})
+    
+    class Gripper2Rewards:
+        grasp_handle = RewTerm(...)
+    
+    class Gripper1Rewards:
+        stay_closed = RewTerm(func=mdp.keep_gripper1_closed_curriculum_wrapped, weight=1.0)
+
+    arm = ArmRewards()
+    gripper2 = Gripper2Rewards()
+    gripper1 = Gripper1Rewards()
 
 
 
 @configclass
-class RewardsCfg:   #reward con curriculum
+class TerminationsCfgMADRL: #terminations per madrl
+    """Termination terms per MADRL."""
 
-    # align_ee_handle = RewTerm(func=mdp.align_ee_handle_curriculum_wrapped, weight=2.5)
+    @configclass
+    class ArmTerminations:
+        time_out = DoneTerm(func=mdp.time_out, time_out=True)
+        low_arm = DoneTerm(func=mdp_events.terminate_if_low, params={"threshold4": 0.15, "threshold6": 0.1, "threshold_ee": 0.1})
+        wheel = DoneTerm(func=mdp_events.terminate_wheel, params={"threshold": 0.31})
 
-    align_ee_handlez = RewTerm(func=mdp.align_ee_handle_z_curriculum_wrapped, weight=1)
-
-    align_ee_handlex = RewTerm(func=mdp.align_ee_handle_x_curriculum_wrapped, weight=1)
-
-    # penalize_ee_x = RewTerm(func=mdp.penalize_ee_x, weight=1)
-
-    # penalize_joint7 = RewTerm(func=mdp.penalize_joint7, weight=0.05)
-    
-    penalize_low_joints = RewTerm(func=mdp.penalize_low_joints_curriculum, weight=1, params={"threshold4": 0.25, "threshold_ee": 0.25})
-    
-    reward_joint4_height = RewTerm(func=mdp.reward_joint4_height, weight=1)
-    
-    approach_zy = RewTerm(func=mdp.approach_zy_alignment_curriculum_wrapped, weight=1)
+    # @configclass
+    # class Gripper1Terminations:
+    #     # es. se vuoi terminare se gripper è troppo aperto o altro
         
-    approach_x = RewTerm(func=mdp.approach_x_conditional_on_yz_curriculum_wrapped, weight=1)
 
+    # @configclass
+    # class Gripper2Terminations:
 
-    # collision_penalty = RewTerm(func=mdp.collision_penalty, weight=1.0)
-
-    penalty_x = RewTerm(func=mdp.penalty_x, weight=-1.0)
-
-    penalty_touch = RewTerm(func=mdp.penalty_touch, weight=-1.0)
-
-    penalty_wheel = RewTerm(func=mdp.penalty_wheel, weight=-100.0)
-
-
-
-
-    # approach_gripper_handle = RewTerm(func=mdp.approach_gripper_handle, weight=5.0, params={"offset": MISSING})
-
-    # grasp_handle = RewTerm(func=mdp.grasp_handle_curriculum_wrapped,weight=1)
-
-    # grasp_handle2 = RewTerm(func=mdp.grasp2_curriculum_wrapped,weight=1)
-
-    # keep_gripper1_closed = RewTerm(func=mdp.keep_gripper1_closed_curriculum_wrapped, weight=1,)  
-    
-    # keep_g1_closed = RewTerm(func=mdp.keep_g1_closed_curriculum_wrapped, weight=1,)  
-
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.02)
-    joint_vel = RewTerm(func=mdp.joint_vel_l2, weight=-0.01)
-
-
-
-@configclass
-class TerminationsCfg:
-    """Termination terms for the MDP."""
-
-    time_out = DoneTerm(func=mdp.time_out, time_out=True)
-
-    grasp_completed = DoneTerm(func=mdp_events.is_grasp_successful) #uso la funzione grasp_completed del mio events.py customizzato
-
-    low_arm = DoneTerm(func=mdp_events.terminate_if_low, params={"threshold4": 0.15, "threshold6": 0.15, "threshold_ee": 0.15})
-
-    wheel_z = DoneTerm(func=mdp_events.terminate_wheel_z, params={"threshold": 0.35})
-
-    wheel = DoneTerm(func=mdp_events.terminate_wheel, params={"limit": 0.99})
-
-    collision = DoneTerm(func=mdp_events.collision_termination, params={"threshold": 10})
-
+    arm_termination = ArmTerminations()
+    # gripper1 = Gripper1Terminations()
+    # gripper2 = Gripper2Terminations()
 
 
 
@@ -427,12 +361,12 @@ class DragonGraspEnvCfg(ManagerBasedRLEnvCfg):
     recorders: RecorderManagerBaseCfg = RecorderManagerBaseCfg()
 
 
-    observations: ObservationsCfg = ObservationsCfg()
-    actions: ActionsCfg = ActionsCfg()
-    rewards: RewardsCfg = RewardsCfg()
-    terminations: TerminationsCfg = TerminationsCfg()
     events: EventCfg = EventCfg()
 
+    observations: ObservationsCfgMADRL = ObservationsCfgMADRL()
+    actions: ActionsCfgMADRL = ActionsCfgMADRL()
+    rewards: RewardsCfgMADRL = RewardsCfgMADRL()
+    terminations: TerminationsCfgMADRL = TerminationsCfgMADRL()
 
 
     def __post_init__(self):
