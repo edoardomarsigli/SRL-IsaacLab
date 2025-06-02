@@ -27,6 +27,8 @@ from isaaclab.assets import AssetBaseCfg
 from isaaclab.sim import UsdFileCfg
 #from isaaclab.terrains.config.rough import PERLIN_TERRAIN_CFG
 
+from isaaclab.assets import RigidObjectCfg
+from typing import Dict
 
 
 
@@ -61,6 +63,11 @@ FRAME_MARKER_SMALL_CFG.markers["frame"].scale = (0.10, 0.10, 0.10)
 class DragonGraspSceneCfg(InteractiveSceneCfg):
     """Scene with hero_dragon robot and a fixed wheel with a handle."""
 
+    # Robot (popolato dall'env cfg)
+    robot: ArticulationCfg = MISSING
+    ee_frame: FrameTransformerCfg = MISSING
+    wheel_with_handle: ArticulationCfg= MISSING
+
     terrain = TerrainImporterCfg(
         prim_path="/World/ground",
         terrain_type="plane",
@@ -78,41 +85,35 @@ class DragonGraspSceneCfg(InteractiveSceneCfg):
         debug_vis=True
     )
 
-    contact_sensor_left1 = ContactSensorCfg(
-        prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper2_jaw_left",
-        filter_prim_paths_expr=["{ENV_REGEX_NS}/hero_wheel/wheel11_left"],  # o "{ENV_REGEX_NS}/hero_wheel/wheel11_out" se vuoi la maniglia specifica
-        track_air_time=True,
-        track_pose=True,
-        force_threshold=1.0,
-    )
-    contact_sensor_left2 = ContactSensorCfg(
-        prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper2_jaw_left",
-        filter_prim_paths_expr=["{ENV_REGEX_NS}/hero_wheel/wheel11_right"],  # o "{ENV_REGEX_NS}/hero_wheel/wheel11_out" se vuoi la maniglia specifica
-        track_air_time=True,
-        track_pose=True,
-        force_threshold=1.0,
-    )
-    contact_sensor_right1 = ContactSensorCfg(
-        prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper2_jaw_right",
-        filter_prim_paths_expr=["{ENV_REGEX_NS}/hero_wheel/wheel11_left"],  # o "{ENV_REGEX_NS}/hero_wheel/wheel11_out" se vuoi la maniglia specifica
-        track_air_time=True,
-        track_pose=True,
-        force_threshold=1.0,
-    )
-    contact_sensor_right2 = ContactSensorCfg(
-        prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper2_jaw_right",
-        filter_prim_paths_expr=["{ENV_REGEX_NS}/hero_wheel/wheel11_right"],  # o "{ENV_REGEX_NS}/hero_wheel/wheel11_out" se vuoi la maniglia specifica
-        track_air_time=True,
-        track_pose=True,
-        force_threshold=1.0,
-    )
+    # contact_sensor_left1 = ContactSensorCfg(
+    #     prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper2_jaw_left",
+    #     filter_prim_paths_expr=["{ENV_REGEX_NS}/hero_wheel/wheel11_left"],  # o "{ENV_REGEX_NS}/hero_wheel/wheel11_out" se vuoi la maniglia specifica
+    #     track_air_time=True,
+    #     track_pose=True,
+    #     force_threshold=1.0,
+    # )
+    # contact_sensor_left2 = ContactSensorCfg(
+    #     prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper2_jaw_left",
+    #     filter_prim_paths_expr=["{ENV_REGEX_NS}/hero_wheel/wheel11_right"],  # o "{ENV_REGEX_NS}/hero_wheel/wheel11_out" se vuoi la maniglia specifica
+    #     track_air_time=True,
+    #     track_pose=True,
+    #     force_threshold=1.0,
+    # )
+    # contact_sensor_right1 = ContactSensorCfg(
+    #     prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper2_jaw_right",
+    #     filter_prim_paths_expr=["{ENV_REGEX_NS}/hero_wheel/wheel11_left"],  # o "{ENV_REGEX_NS}/hero_wheel/wheel11_out" se vuoi la maniglia specifica
+    #     track_air_time=True,
+    #     track_pose=True,
+    #     force_threshold=1.0,
+    # )
+    # contact_sensor_right2 = ContactSensorCfg(
+    #     prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper2_jaw_right",
+    #     filter_prim_paths_expr=["{ENV_REGEX_NS}/hero_wheel/wheel11_right"],  # o "{ENV_REGEX_NS}/hero_wheel/wheel11_out" se vuoi la maniglia specifica
+    #     track_air_time=True,
+    #     track_pose=True,
+    #     force_threshold=1.0,
+    # )
 
-
-
-    # Robot (popolato dall'env cfg)
-    robot: ArticulationCfg = MISSING
-    ee_frame: FrameTransformerCfg = MISSING
-    wheel_with_handle: ArticulationCfg= MISSING
 
     handle_frame=FrameTransformerCfg(
         prim_path="{ENV_REGEX_NS}/hero_wheel/wheel11_out",
@@ -155,7 +156,7 @@ class DragonGraspSceneCfg(InteractiveSceneCfg):
 
     rf1_frame=FrameTransformerCfg(
         prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper1_jaw_right",  #associato a giunto grip1
-        debug_vis=True, 
+        debug_vis=False, 
         visualizer_cfg=FRAME_MARKER_SMALL_CFG.replace(prim_path="/Visuals/RFFrame"),
         target_frames=[
             FrameTransformerCfg.FrameCfg(
@@ -354,33 +355,27 @@ class EventCfg:
 @configclass
 class RewardsCfg:   #reward con curriculum
 
-    # align_ee_handle = RewTerm(func=mdp.align_ee_handle_curriculum_wrapped, weight=2.5)
-
-    align_ee_handlez = RewTerm(func=mdp.align_ee_handle_z_curriculum_wrapped, weight=1)
-
-    align_ee_handlex = RewTerm(func=mdp.align_ee_handle_x_curriculum_wrapped, weight=1)
-
-    # penalize_ee_x = RewTerm(func=mdp.penalize_ee_x, weight=1)
-
-    # penalize_joint7 = RewTerm(func=mdp.penalize_joint7, weight=0.05)
+    align_ee_handle = RewTerm(func=mdp.align_ee_handle_curriculum_wrapped, weight=0.5)
     
     penalize_low_joints = RewTerm(func=mdp.penalize_low_joints_curriculum, weight=1, params={"threshold4": 0.25, "threshold_ee": 0.25})
     
-    reward_joint4_height = RewTerm(func=mdp.reward_joint4_height, weight=1)
+    reward_joint4_zyx = RewTerm(func=mdp.reward_joint4_zyx, weight=0.25)
     
-    approach_zy = RewTerm(func=mdp.approach_zy_alignment_curriculum_wrapped, weight=1)
+    approach_zy = RewTerm(func=mdp.approach_zy_curriculum_wrapped, weight=1)
         
-    approach_x = RewTerm(func=mdp.approach_x_conditional_on_yz_curriculum_wrapped, weight=1)
-
-
-    # collision_penalty = RewTerm(func=mdp.collision_penalty, weight=1.0)
-
-    penalty_x = RewTerm(func=mdp.penalty_x, weight=-1.0)
+    approach_x = RewTerm(func=mdp.approach_x_curriculum_wrapped, weight=2)
 
     penalty_touch = RewTerm(func=mdp.penalty_touch, weight=-1.0)
 
     penalty_wheel = RewTerm(func=mdp.penalty_wheel, weight=-100.0)
 
+    #APPROACH GRASP
+
+    align_grasp = RewTerm(func=mdp.align_grasp, weight=1.0)
+
+    approach_grasp = RewTerm(func=mdp.approach_grasp, weight=1.0)  # offset da definire in base al curriculum
+
+    penalize_handle_drift = RewTerm(func=mdp.penalize_handle_drift, weight=-50)
 
 
 
@@ -390,12 +385,12 @@ class RewardsCfg:   #reward con curriculum
 
     # grasp_handle2 = RewTerm(func=mdp.grasp2_curriculum_wrapped,weight=1)
 
-    # keep_gripper1_closed = RewTerm(func=mdp.keep_gripper1_closed_curriculum_wrapped, weight=1,)  
+    keep_gripper1_closed = RewTerm(func=mdp.keep_gripper1_closed_curriculum_wrapped, weight=5)  
     
     # keep_g1_closed = RewTerm(func=mdp.keep_g1_closed_curriculum_wrapped, weight=1,)  
 
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.02)
-    joint_vel = RewTerm(func=mdp.joint_vel_l2, weight=-0.01)
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
+    joint_vel = RewTerm(func=mdp.joint_vel_l2, weight=-0.005)
 
 
 
@@ -411,9 +406,9 @@ class TerminationsCfg:
 
     wheel_z = DoneTerm(func=mdp_events.terminate_wheel_z, params={"threshold": 0.35})
 
-    wheel = DoneTerm(func=mdp_events.terminate_wheel, params={"limit": 0.99})
+    wheel = DoneTerm(func=mdp_events.terminate_wheel, params={"limit": 0.98})
 
-    collision = DoneTerm(func=mdp_events.collision_termination, params={"threshold": 10})
+    # collision = DoneTerm(func=mdp_events.collision_termination, params={"threshold": 10})
 
 
 

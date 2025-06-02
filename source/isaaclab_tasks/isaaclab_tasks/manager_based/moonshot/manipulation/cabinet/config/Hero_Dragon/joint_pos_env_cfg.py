@@ -9,12 +9,6 @@ from isaaclab.sensors.frame_transformer.frame_transformer_cfg import OffsetCfg
 from isaaclab.sensors import FrameTransformerCfg
 from isaaclab_tasks.manager_based.moonshot.descriptions.config.moonbot_cfgs_edo import DRAGON_ARTICULATED_CFG, WHEEL_WITH_HANDLE_CFG
 
-
-
-
-
-
-
 from isaaclab_tasks.manager_based.moonshot.manipulation.cabinet import mdp
 
 from isaaclab_tasks.manager_based.moonshot.manipulation.cabinet.cabinet_env_cfg import (  # isort: skip
@@ -27,13 +21,20 @@ from isaaclab_tasks.manager_based.moonshot.manipulation.cabinet.cabinet_env_cfg 
 ##
 import isaaclab_tasks.manager_based.moonshot.utils as moonshot_utils
 
+from isaaclab.sim.schemas.schemas_cfg import RigidBodyPropertiesCfg
+from isaaclab.assets import RigidObjectCfg
+from isaaclab.sim.spawners.from_files.from_files_cfg import UsdFileCfg
+from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
+
+
+
 ISAAC_LAB_PATH = moonshot_utils.find_isaaclab_path().replace("\\","/")
 
-# @configclass
-# class MultiAgentActionsCfg:
-#     arm: mdp.JointPositionActionCfg = MISSING
-#     gripper2: mdp.JointPositionActionCfg = MISSING
-#     gripper1: mdp.JointPositionActionCfg = MISSING
+
+from pathlib import Path
+
+usd_path = str((Path(__file__).parent / "/home/edomrl/SRL-IsaacLab/source/isaaclab_tasks/isaaclab_tasks/manager_based/moonshot/descriptions/usd/robot/HERO_wheel/hero_wheelfisso2.usd").resolve())
+
 
 
 @configclass
@@ -44,8 +45,18 @@ class HeroDragonGraspEnvCfg(DragonGraspEnvCfg):
 
         self.grasp_completed = None
 
+        self.scene.env_spacing = 6
+
+        self.scene.terrain.max_init_terrain_level = None
+        
+        self.observations.policy.enable_corruption = False
+        self.viewer.resolution = (2540,1440)
+        self.viewer.eye = (0.8, 2, 0.8) # basic view
+
         self.scene.robot=DRAGON_ARTICULATED_CFG
         self.scene.wheel_with_handle=WHEEL_WITH_HANDLE_CFG
+
+
         self.scene.ee_frame=FrameTransformerCfg(
             prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper2",
             debug_vis=True,
@@ -134,8 +145,9 @@ class HeroDragonGraspEnvCfg(DragonGraspEnvCfg):
         # self.actions.gripper_action = mdp.JointPositionActionCfg(
         #     asset_name="robot",
         #     joint_names=["leg2grip1", "leg2grip2"],
-        #     scale=1,
-        #     clip={"leg2grip1": (-0.029, 0.0),"leg2grip2": (-0.029, 0.0),}
+        #     scale=0.015,
+        #     offset=-0.015,
+        #     clip={"leg2grip1": (-0.029, 0.0),"leg2grip2": (-0.029, 0.0)}
         # )
 
         # self.actions.gripper_action = mdp.BinaryJointPositionActionCfg(
@@ -159,6 +171,7 @@ class HeroDragonGraspEnvCfg(DragonGraspEnvCfg):
 class HeroDragonGraspEnvCfg_PLAY(HeroDragonGraspEnvCfg):
     def __post_init__(self):
         super().__post_init__()
+
         self.scene.num_envs = 32
     
         self.scene.env_spacing = 6

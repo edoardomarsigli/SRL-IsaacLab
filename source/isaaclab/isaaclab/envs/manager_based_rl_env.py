@@ -21,7 +21,6 @@ from isaaclab.ui.widgets import ManagerLiveVisualizer
 from .common import VecEnvStepReturn
 from .manager_based_env import ManagerBasedEnv
 from .manager_based_rl_env_cfg import ManagerBasedRLEnvCfg
-from isaaclab_tasks.manager_based.moonshot.manipulation.cabinet.mdp.rewards import get_curriculum_thresholds
 
 
 
@@ -258,8 +257,8 @@ class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
         self.obs_buf = self.observation_manager.compute()
 
 
-        robot = self.scene["robot"]
-        joint_names = robot.data.joint_names
+        # robot = self.scene["robot"]
+        # joint_names = robot.data.joint_names
 
         # with torch.no_grad():
         #         robot.data.joint_pos[:, joint_names.index("leg2joint7")] = torch.tensor(0.0, device=robot.data.joint_pos.device)
@@ -276,11 +275,11 @@ class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
         #     #         target = robot.data.joint_pos_target[:, idx]
         #     #         print(f"[DEBUG][{name}] pos: {actual[0].item():.4f}, target: {target[0].item():.4f}", flush=True)
 
-        #     if "leg2joint7" in joint_names:
-        #         idx = joint_names.index("leg2joint7")
+        #     if "leg2joint4" in joint_names:
+        #         idx = joint_names.index("leg2joint4")
         #         actual = robot.data.joint_pos[:, idx]
         #         target = robot.data.joint_pos_target[:, idx]
-        #         print(f"[DEBUG][leg2joint7] pos: {actual[0].item():.4f}, target: {target[0].item():.4f}", flush=True)
+        #         print(f"[DEBUG][leg2joint4] pos: {actual[0].item():.4f}, target: {target[0].item():.4f}", flush=True)
 
 
 
@@ -467,10 +466,10 @@ class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
         if hasattr(self, "episode_counter"):
             self.episode_counter[env_ids] += 1
 
-            # Controlla se almeno uno ha raggiunto un multiplo di 100
-            # if (self.episode_counter % 100 == 0).any():
-            #     print("▶️ Episode counters:")
-            #     for i, count in enumerate(self.episode_counter.tolist()):
-            #         print(f"  - Env {i}: {count}")
+
+        for env_id in env_ids.tolist():
+            ep = self.episode_counter[env_id].item()
+            if ep % 100 == 0:
+                print(f"📣 Env {env_id} has reached episode {ep}")
 
 

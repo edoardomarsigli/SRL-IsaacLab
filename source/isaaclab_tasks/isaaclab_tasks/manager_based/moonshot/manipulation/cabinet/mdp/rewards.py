@@ -46,15 +46,10 @@ def get_curriculum_thresholds(env):
     else:
         episode = env.episode_counter.float()
 
-    align_threshold = threshold_curriculum(env, 0.7, 0.9, start_episode=0, end_episode=10000) #per bonus di align 
-    align_threshold1 = threshold_curriculum(env, 0.7, 0.9, start_episode=100, end_episode=10000) #per start di zy a 200
-    zy_threshold = threshold_curriculum(env, 0.1, 0.02, start_episode=100, end_episode=10000) #per bonus zy
-    zy_threshold1 = threshold_curriculum(env, 0.1, 0.02, start_episode=400, end_episode=10400) #per start di x a 400
-    x_threshold = threshold_curriculum(env, 0.15, 0.05, start_episode=400, end_episode=1000) #per bonus di x
-    grasp_threshold = threshold_curriculum(env, 0.50, 0.01, start_episode=600, end_episode=10600) #per start di grasp a 600
+    grasp_threshold = threshold_curriculum(env, 0.50, 0.01, start_episode=600, end_episode=2600) #per start di grasp a 600
     # z_limit = threshold_curriculum(env, 0.5, 0.2, start_episode=0, end_episode=10000) #per start di grasp a 600
 
-    return align_threshold, align_threshold1, zy_threshold, zy_threshold1 , x_threshold, grasp_threshold
+    return grasp_threshold
 
 
 def weight_curriculum(env, start_value, end_value, start_episode, end_episode):
@@ -87,97 +82,46 @@ def weight_curriculum(env, start_value, end_value, start_episode, end_episode):
 #         # Se uno dei frame non è pronto, ritorna reward 0 temporanea
 #         return torch.zeros(env.num_envs, device=env.device)
 
-
-def align_ee_handle_z(env: ManagerBasedRLEnv, align_threshold) -> torch.Tensor:
+def align_ee_handle(env: ManagerBasedRLEnv) -> torch.Tensor:
     """
-    Reward for aligning the end-effector Z axis with the handle Z axis.
+    Reward for aligning both the end-effector Z and X axes with the handle's Z and X axes.
+    Combines the alignment in Z (tip direction) and X (gripper facing).
     """
     ee_quat = env.scene["ee_frame"].data.target_quat_w[..., 0, :]
     handle_quat = env.scene["handle_frame"].data.target_quat_w[..., 0, :]
 
     ee_rot_mat = matrix_from_quat(ee_quat)
-    handle_mat = matrix_from_quat(handle_quat)
+    handle_rot_mat = matrix_from_quat(handle_quat)
 
+    # Z alignment
     ee_z = ee_rot_mat[..., 2]
-    handle_z = handle_mat[..., 2]
-
+    handle_z = handle_rot_mat[..., 2]
     align_z = torch.bmm(ee_z.unsqueeze(1), handle_z.unsqueeze(-1)).squeeze(-1).squeeze(-1)  # (N,)
+    reward_z = torch.sign(align_z) * align_z**2
 
-    reward = torch.sign(align_z) * align_z**2
-    z_bonus = (align_z >= align_threshold).float() * 0.5
-
-    return reward + z_bonus
-
-def align_ee_handle_z_curriculum_wrapped(env: ManagerBasedRLEnv) -> torch.Tensor:
-    _, align_threshold, _,_,_,_ = get_curriculum_thresholds(env)
-    return align_ee_handle_z(env, align_threshold)
-
-def align_ee_handle_x(env: ManagerBasedRLEnv, align_threshold) -> torch.Tensor:
-    """
-    Reward for aligning the end-effector X axis with the handle X axis.
-    """
-    ee_quat = env.scene["ee_frame"].data.target_quat_w[..., 0, :]
-    handle_quat = env.scene["handle_frame"].data.target_quat_w[..., 0, :]
-
-    ee_rot_mat = matrix_from_quat(ee_quat)
-    handle_mat = matrix_from_quat(handle_quat)
-
+    # X alignment
     ee_x = ee_rot_mat[..., 0]
-    handle_x = handle_mat[..., 0]
-
+    handle_x = handle_rot_mat[..., 0]
     align_x = torch.bmm(ee_x.unsqueeze(1), handle_x.unsqueeze(-1)).squeeze(-1).squeeze(-1)  # (N,)
+    reward_x = torch.sign(align_x) * align_x**4
 
-    reward = torch.sign(align_x) * align_x**4
-    x_bonus = (align_x >= align_threshold).float() * 0.5
+    # Total reward
+    return reward_z + reward_x
 
-    return reward + x_bonus
-
-def align_ee_handle_x_curriculum_wrapped(env: ManagerBasedRLEnv) -> torch.Tensor:
-    _, align_threshold, _,_,_,_ = get_curriculum_thresholds(env)
-    return align_ee_handle_x(env, align_threshold)
-
-def penalize_ee_x(env: ManagerBasedRLEnv) -> torch.Tensor:
+def align_ee_handle_curriculum_wrapped(env: ManagerBasedRLEnv) -> torch.Tensor:
     """
-    Reward for aligning the end-effector X axis with the handle X axis.
+    Wrapper to apply curriculum-based thresholds for the alignment reward.
     """
-    try:
-        ee_quat = env.scene["ee_frame"].data.target_quat_w[..., 0, :]
-        handle_quat = env.scene["handle_frame"].data.target_quat_w[..., 0, :]
-
-        ee_rot_mat = matrix_from_quat(ee_quat)
-        handle_mat = matrix_from_quat(handle_quat)
-
-        ee_x = ee_rot_mat[..., 0]
-        handle_x = handle_mat[..., 0]
-
-        align_x = torch.bmm(ee_x.unsqueeze(1), handle_x.unsqueeze(-1)).squeeze(-1).squeeze(-1)  # (N,)
-
-        penalty = torch.where(align_x < 0, align_x**4 * -1, torch.zeros_like(align_x))
-        return penalty
-        
-    except (KeyError, AttributeError):
+    if not hasattr(env, "episode_counter"):
         return torch.zeros(env.num_envs, device=env.device)
-    
 
 
+    global_episode_counter = env.episode_counter.min()  # attivazione sincronizzata tra gli envs
 
-def penalize_joint7(env: ManagerBasedRLEnv, weight: float = -3.0) -> torch.Tensor:
-    """
-    Penalizza se la posizione del giunto 7 è fuori dal range [-π, π].
-    """
-    # Indice del giunto 7 nella lista dei joint names
-    joint_idx = env.scene["robot"].joint_names.index("leg2joint7")
-
-    # Posizione attuale del giunto 7
-    joint7_pos = env.scene["robot"].data.joint_pos[..., joint_idx]  # (N,)
-
-    # Calcolo quanto esce dal range
-
-
-    violation = (joint7_pos.abs() > 3.1).float()  # (N,)
-    in_range = (joint7_pos.abs() <= 3.1).float()  # (N,)
-
-    return violation * weight + in_range
+    if global_episode_counter >= 0:
+        return align_ee_handle(env)
+    else:
+        return torch.zeros_like(align_ee_handle(env))  # ritorna zero se non ancora attivo
 
 def penalize_low_joints(env, threshold4, threshold_ee)-> torch.Tensor:
 
@@ -205,67 +149,50 @@ def penalize_low_joints(env, threshold4, threshold_ee)-> torch.Tensor:
         return -10.0 * (penalty_magnitudes+penalty_magnitudes_ee) # <-- qui controlli quanto vuoi punire
     except (KeyError, AttributeError):
             return torch.zeros(env.num_envs, device=env.device)
-    
-    
+      
 def penalize_low_joints_curriculum(env: ManagerBasedRLEnv, threshold4, threshold_ee) -> torch.Tensor:
     base_reward = penalize_low_joints(env, threshold4, threshold_ee)
     weight = weight_curriculum(env, start_value=0.5, end_value=5, start_episode=0, end_episode=10000)
     return base_reward * weight
 
+def reward_joint4_zyx(env: ManagerBasedRLEnv) -> torch.Tensor: #reward e penalità per giunto 4 altezza
 
-
-
-#PHASE1
-
-def reward_joint4_height(env: ManagerBasedRLEnv) -> torch.Tensor: #reward e penalità per giunto 4 altezza
-
-    threshold = 0.25
-    z_limit = 0.5
 
     # Ottieni posizione mondiale del giunto 4
     joint4_pos = env.scene["joint4_frame"].data.target_pos_w[..., 0, :]
     joint4_z = joint4_pos[..., 2]  # solo asse Z
+    joint4_y= joint4_pos[..., 1]  # solo asse Y
+    joint4_x= joint4_pos[..., 0]  # solo asse X
 
     handle_pos = env.scene["handle_frame"].data.target_pos_w[..., 0, :]
     handle_z = handle_pos[..., 2]  # solo asse Z
+    handle_y = handle_pos[..., 1]  # solo asse Y
+    handle_x = handle_pos[..., 0]  # solo asse X
 
     # Reward continuo: maggiore è la distanza sopra la soglia, più reward
     in_range = (joint4_z >= handle_z)
 
     # Linear shaping
-    positive_reward = (joint4_z - handle_z)* in_range  # positivo solo se sopra soglia
+    reward_z= (joint4_z - handle_z)* in_range  
+    
+    distance_y = (joint4_y - (handle_y)).abs()  # distanza tra giunto 4 e handle lungo Y
+    reward_y = torch.where(in_range, 1/(1+distance_y*4), torch.zeros_like(distance_y))  
+    
+    distance_x = (joint4_x - handle_x).abs()  # distanza tra giunto 4 e handle lungo X
+    reward_x= torch.where(in_range, 1/(1+distance_x*4), torch.zeros_like(distance_x))
 
-    weight = weight_curriculum(env, start_value=1, end_value=0.1, start_episode=0, end_episode=200)
+    if env.episode_counter.min() < 400:
+        return reward_z + reward_y
 
-    return positive_reward*weight
+    # weight = weight_curriculum(env, start_value=1, end_value=0.1, start_episode=0, end_episode=200)
 
+    return reward_z + reward_y + reward_x#* weight  # reward positivo se sopra soglia, zero altrimenti
 
-
-
-#PHASE2
-
-
-
-def approach_zy_alignment(env: ManagerBasedRLEnv, zy_threshold, align_threshold1, only_if_over) -> torch.Tensor: #allineamento xy e bonus solo se align ee handle buono
+def approach_zy(env: ManagerBasedRLEnv) -> torch.Tensor: #allineamento xy e bonus solo se align ee handle buono
     """
     Reward for aligning the EE and handle origins in the XY plane (ignores Z axis).
     """
     try:
-
-        ee_quat = env.scene["ee_frame"].data.target_quat_w[..., 0, :]
-        handle_quat = env.scene["handle_frame"].data.target_quat_w[..., 0, :]
-
-        ee_rot_mat = matrix_from_quat(ee_quat)
-        handle_mat = matrix_from_quat(handle_quat)
-
-        # EE directions
-        ee_x, ee_z = ee_rot_mat[..., 0], ee_rot_mat[..., 2]
-        # Handle directions
-        handle_x, handle_z = handle_mat[..., 0], handle_mat[..., 2]
-
-        # Dot products (alignment measures)
-        align_z = torch.bmm(ee_z.unsqueeze(1), -handle_z.unsqueeze(-1)).squeeze(-1).squeeze(-1)  # (N,)
-        align_x = torch.bmm(ee_x.unsqueeze(1), -handle_x.unsqueeze(-1)).squeeze(-1).squeeze(-1)  # (N,)
 
         handle_pos = env.scene["handle_frame"].data.target_pos_w[..., 0, :]
         ee_pos = env.scene["ee_frame"].data.target_pos_w[..., 0, :]
@@ -281,39 +208,33 @@ def approach_zy_alignment(env: ManagerBasedRLEnv, zy_threshold, align_threshold1
         reward = 1.0 / (1.0 + distance_yz**2)
         reward = torch.pow(reward, 2)
 
-        yz_bonus = (distance_yz <= zy_threshold).float()
 
-        if only_if_over:
-            mask = (ee_pos[..., 2] >= handle_pos[..., 2])
-            reward = (reward + yz_bonus) * mask.float()
+        mask = (ee_pos[..., 2] >= handle_pos[..., 2])
+        reward = (reward) * mask.float()
 
-        # Bonus if close enough
-        # return torch.where((align_z >= align_threshold1) & (align_x >= align_threshold1), reward, torch.zeros_like(reward))+yz_bonus
-        return reward+yz_bonus
+        x_distance = torch.abs(handle_pos[..., 0] - ee_pos[..., 0])  # (N,)
+
+        if env.episode_counter.min() < 400:
+            return torch.where(x_distance > 0.3 , reward, torch.zeros_like(reward))
+
+        return reward
 
     except (KeyError, AttributeError):
         return torch.zeros(env.num_envs, device=env.device)
 
-def approach_zy_alignment_curriculum_wrapped(env: ManagerBasedRLEnv) -> torch.Tensor:
+def approach_zy_curriculum_wrapped(env: ManagerBasedRLEnv) -> torch.Tensor:
  
     if not hasattr(env, "episode_counter"):
         return torch.zeros(env.num_envs, device=env.device)
 
-    _, align_threshold1, zy_threshold, _, _, _  = get_curriculum_thresholds(env)
-
     global_episode_counter = env.episode_counter.min() #attivazione sincronizzata tra gli envs
 
-    only_if_over = global_episode_counter >= 400
-
-    if global_episode_counter >= 30:
-        return approach_zy_alignment(env, zy_threshold, align_threshold1, only_if_over)
+    if global_episode_counter >= 5:
+        return approach_zy(env)
     else:
-        return torch.zeros_like(approach_zy_alignment(env, zy_threshold, align_threshold1, only_if_over))
+        return torch.zeros_like(approach_zy(env))    
 
-
-    
-
-def approach_x_conditional_on_yz(env: ManagerBasedRLEnv, zy_threshold1, x_threshold) -> torch.Tensor: #allineamento z solo se xy buono
+def approach_x(env: ManagerBasedRLEnv) -> torch.Tensor: #allineamento z solo se xy buono
     """
     Reward for minimizing the vertical (Z-axis) distance between EE and handle,
     but only if their XY positions are close (within xy_threshold).
@@ -330,77 +251,37 @@ def approach_x_conditional_on_yz(env: ManagerBasedRLEnv, zy_threshold1, x_thresh
         distance_yz = torch.norm(handle_yz - ee_yz, dim=-1, p=2)
 
         # Step 2: Calcola la distanza lungo l'asse x (modulo)
-        x_distance = torch.abs(handle_pos[..., 0] - ee_pos[..., 0])  # (N,)
+        x_distance = torch.abs((handle_pos[..., 0]) - ee_pos[..., 0])  # (N,)
 
         # Step 3: Reward shaping sulla distanza Z (solo se XY è sotto soglia)
-        x_reward = 1.0 / (1.0 + x_distance**2)
+        x_reward = 1.0 / (1.0 + x_distance*2)
         x_reward = torch.pow(x_reward, 2)
 
-        x_bonus = (x_distance <= x_threshold).float()
-
-        adaptive_threshold = 0.8 * x_distance + zy_threshold1 #cono di threshold
+        adaptive_threshold = 0.8 * x_distance + 0.05 #cono di threshold
         # Step 4: Applica solo se XY è vicino
-        return torch.where(distance_yz <= adaptive_threshold, x_reward, torch.zeros_like(x_reward))+x_bonus
+        return torch.where(distance_yz <= adaptive_threshold, x_reward, torch.zeros_like(x_reward))
 
     except (KeyError, AttributeError):
         return torch.zeros(env.num_envs, device=env.device)
 
-def approach_x_conditional_on_yz_curriculum_wrapped(env: ManagerBasedRLEnv) -> torch.Tensor:
+def approach_x_curriculum_wrapped(env: ManagerBasedRLEnv) -> torch.Tensor:
 
     if not hasattr(env, "episode_counter"):
         return torch.zeros(env.num_envs, device=env.device)
-    _,_,_, zy_threshold1, x_threshold, _ = get_curriculum_thresholds(env)
 
-    reward= approach_x_conditional_on_yz(env, zy_threshold1, x_threshold)
+    reward= approach_x(env)
 
     global_episode_counter = env.episode_counter.min() #attivazione sincronizzata tra gli envs
-    mask = global_episode_counter >= 100
+    mask = global_episode_counter >= 50
     # mask = env.episode_counter >= 400
     if mask:
         return reward
     else:
         return torch.zeros_like(reward)
 
-def collision_penalty(env: ManagerBasedRLEnv) -> torch.Tensor:
-    
-    try:
-        sensor = env.scene.sensors["contact_sensor_left1"]
-        contact_forces = sensor.data.force_matrix_w  # shape: (N, B, F, 3)
-        magnitudes = torch.norm(contact_forces, dim=-1).sum(dim=(-1, -2))  # sum across bodies and filters
-
-        sensor2 = env.scene.sensors["contact_sensor_right1"]
-        contact_forces2 = sensor2.data.force_matrix_w  # shape: (N, B, F, 3)
-        magnitudes2 = torch.norm(contact_forces2, dim=-1).sum(dim=(-1, -2))  # sum across bodies and filters
-
-        sensor3 = env.scene.sensors["contact_sensor_left2"]
-        contact_forces3 = sensor3.data.force_matrix_w  # shape: (N, B, F, 3)
-        magnitudes3 = torch.norm(contact_forces3, dim=-1).sum(dim=(-1, -2))  # sum across bodies and filters
-
-        sensor4 = env.scene.sensors["contact_sensor_right2"]
-        contact_forces4 = sensor4.data.force_matrix_w  # shape: (N, B, F, 3)
-        magnitudes4 = torch.norm(contact_forces4, dim=-1).sum(dim=(-1, -2))  # sum across bodies and filters
-
-        weight = weight_curriculum(env, start_value=-500, end_value=-1000, start_episode=0, end_episode=10000)
 
 
-        return weight*(magnitudes + magnitudes2 + magnitudes3 + magnitudes4)# penalità
-    except Exception:
-        return torch.zeros(env.num_envs, device=env.device)
-
-def penalty_x(env: ManagerBasedRLEnv) -> torch.Tensor: #allineamento z solo se xy buono
-    try:
-        handle_pos = env.scene["handle_frame"].data.target_pos_w[..., 0, :]
-        ee_pos = env.scene["ee_frame"].data.target_pos_w[..., 0, :]
-
-        handle_x = handle_pos[..., 0] 
-        ee_x = ee_pos[..., 0]
-
-        penalty_x = (handle_x < ee_x).float()   # (N,)
-
-        return penalty_x 
-
-    except (KeyError, AttributeError):
-        return torch.zeros(env.num_envs, device=env.device)    
+   
     
 def penalty_touch(env: ManagerBasedRLEnv) -> torch.Tensor:  # penalità per tocco
     try:
@@ -415,8 +296,10 @@ def penalty_touch(env: ManagerBasedRLEnv) -> torch.Tensor:  # penalità per tocc
         handle_y = handle_pos[..., 1]
         touch = torch.abs(handle_y - ee_y) > 0.05  # bool
 
+        weight = weight_curriculum(env, start_value=1, end_value=10, start_episode=20, end_episode=10000)
+
         # Penalità -1.0 solo dove la condizione è vera
-        return (close & touch).float()
+        return weight*(close & touch).float()
 
     except (KeyError, AttributeError):
         return torch.zeros(env.num_envs, device=env.device)
@@ -438,7 +321,126 @@ def penalty_wheel(env: ManagerBasedRLEnv) -> torch.Tensor:
 
     except (KeyError, AttributeError):
         return torch.zeros(env.num_envs, device=env.device)
+    
 
+#APPROACH
+
+def align_grasp(env: ManagerBasedRLEnv) -> torch.Tensor:
+    try:
+        ee_quat = env.scene["ee_frame"].data.target_quat_w[..., 0, :]
+        handle_quat = env.scene["handle_frame"].data.target_quat_w[..., 0, :]
+
+        ee_rot_mat = matrix_from_quat(ee_quat)
+        handle_rot_mat = matrix_from_quat(handle_quat)
+
+        # Z alignment
+        ee_z = ee_rot_mat[..., 2]
+        handle_z = handle_rot_mat[..., 2]
+        align_z = torch.bmm(ee_z.unsqueeze(1), handle_z.unsqueeze(-1)).squeeze(-1).squeeze(-1)  # (N,)
+
+        # X alignment
+        ee_x = ee_rot_mat[..., 0]
+        handle_x = handle_rot_mat[..., 0]
+        align_x = torch.bmm(ee_x.unsqueeze(1), handle_x.unsqueeze(-1)).squeeze(-1).squeeze(-1)  # (N,)
+
+        handle_pos = env.scene["handle_frame"].data.target_pos_w[..., 0, :]
+        ee_pos = env.scene["ee_frame"].data.target_pos_w[..., 0, :]
+        x_distance = torch.abs((handle_pos[..., 0]-0.01) - ee_pos[..., 0])  # (N,)
+        threshold= 0.98 - 0.4 * x_distance
+
+
+        close = torch.abs(handle_pos[..., 0] - ee_pos[..., 0]) < 0.1
+        aligned = (align_z > threshold) & (align_x > threshold)
+        reward = 1 / (10*x_distance +1)  
+
+        if not hasattr(env, "episode_counter"):
+            return torch.zeros(env.num_envs, device=env.device)
+
+        global_episode_counter = env.episode_counter.min() #attivazione sincronizzata tra gli envs
+        mask = global_episode_counter >= 50
+        # mask = env.episode_counter >= 400
+        if mask:
+            return torch.where(close, torch.where(aligned, reward, -2.0), 0.0)
+        else:
+            return torch.zeros(env.num_envs, device=env.device)
+
+    except (KeyError, AttributeError):
+        # Se uno dei frame non è pronto, ritorna reward 0 temporanea
+        return torch.zeros(env.num_envs, device=env.device)
+    
+def approach_grasp(env: ManagerBasedRLEnv) -> torch.Tensor:
+    try:
+        handle_pos = env.scene["handle_frame"].data.target_pos_w[..., 0, :]
+        ee_pos = env.scene["ee_frame"].data.target_pos_w[..., 0, :]
+
+        handle_yz = handle_pos[..., [1, 2]]
+        ee_yz = ee_pos[...,  [1, 2]]
+
+        # Euclidean distance in XY plane
+        distance_yz = torch.norm(handle_yz - ee_yz, dim=-1, p=2)
+        close= torch.abs(handle_pos[..., 0] - ee_pos[..., 0]) < 0.1  # (N,)
+        x_distance = torch.abs((handle_pos[..., 0]) - ee_pos[..., 0])  # (N,)
+        threshold= 0.2 * x_distance +0.01
+        reward_pos = 1 / (10*x_distance +1)  
+    
+        global_episode_counter = env.episode_counter.min() #attivazione sincronizzata tra gli envs
+        mask = global_episode_counter >= 50
+        # mask = env.episode_counter >= 400
+        if mask:
+            return torch.where(close, torch.where(distance_yz <= threshold, reward_pos, -2), 0) 
+        else:
+            return torch.zeros(env.num_envs, device=env.device)
+
+    except (KeyError, AttributeError):
+        # Se uno dei frame non è pronto, ritorna reward 0 temporanea
+        return torch.zeros(env.num_envs, device=env.device)
+    
+
+# inizializza il buffer nel tuo ambiente, ad es. in __init__ o reset()
+handle_ref_pose = None
+
+def penalize_handle_drift(env:ManagerBasedRLEnv) -> torch.Tensor:
+    """
+    Penalizza il drift della maniglia rispetto alla sua posa al 40° step.
+    Confronta posizione e orientamento (quaternion).
+    """
+    step = env.episode_length_buf  # (num_envs,)
+    env_ids = torch.arange(env.num_envs, device=step.device)
+
+    # Ottieni posa corrente della maniglia
+    handle_pos = env.scene["handle_frame"].data.target_pos_w[..., 0, :]  # (N, 3)
+    handle_quat = env.scene["handle_frame"].data.target_quat_w[..., 0, :]  # (N, 4)
+
+    # Inizializza reference se non esiste
+    if not hasattr(env, "handle_ref_pose"):
+        env.handle_ref_pose = {
+            "pos": torch.zeros_like(handle_pos),
+            "quat": torch.zeros_like(handle_quat),
+            "stored": torch.zeros(env.num_envs, dtype=torch.bool, device=env.device)
+        }
+
+    # Salva la posa al 40° step
+    save_mask = (step == 250)
+    env.handle_ref_pose["pos"][save_mask] = handle_pos[save_mask]
+    env.handle_ref_pose["quat"][save_mask] = handle_quat[save_mask]
+    env.handle_ref_pose["stored"][save_mask] = True
+
+    # Applica penalità solo dopo step 40 e se reference è salvata
+    valid_mask = (step > 250) & env.handle_ref_pose["stored"]
+
+    # Calcola deviazione
+    pos_diff = handle_pos - env.handle_ref_pose["pos"]
+    quat_dot = torch.sum(handle_quat * env.handle_ref_pose["quat"], dim=-1)
+    rot_diff = 1.0 - torch.abs(quat_dot)  # distanza tra quaternion
+
+    # Penalità solo dove valido
+    penalty = torch.zeros(env.num_envs, device=env.device)
+    penalty[valid_mask] = (
+        1.0 * torch.norm(pos_diff[valid_mask], dim=-1) +
+        0.5 * rot_diff[valid_mask]
+    )
+
+    return torch.where(penalty >= 0.002, penalty, 0)
 
 
 
@@ -496,7 +498,7 @@ def keep_gripper1_closed(env: ManagerBasedRLEnv, closed1_threshold: float=-0.02)
         # is_closed = (gripper_left_pos <= closed_threshold) & (gripper_right_pos <= closed_threshold)
         is_closed = (gripper_right_pos <= closed1_threshold)
 
-        # Reward: +0.1 se chiuso, -0.1 se aperto
+
         reward = torch.where(is_closed, torch.full_like(gripper_right_pos, 1), torch.full_like(gripper_right_pos, -1))
 
         return reward
@@ -627,3 +629,112 @@ def keep_g1_closed_curriculum_wrapped(env: ManagerBasedRLEnv) -> torch.Tensor:
         return reward*weight    
     else:
         return torch.zeros_like(reward)
+    
+def align_ee_handle_z(env: ManagerBasedRLEnv, align_threshold) -> torch.Tensor:
+    """
+    Reward for aligning the end-effector Z axis with the handle Z axis.
+    """
+    ee_quat = env.scene["ee_frame"].data.target_quat_w[..., 0, :]
+    handle_quat = env.scene["handle_frame"].data.target_quat_w[..., 0, :]
+
+    ee_rot_mat = matrix_from_quat(ee_quat)
+    handle_mat = matrix_from_quat(handle_quat)
+
+    ee_z = ee_rot_mat[..., 2]
+    handle_z = handle_mat[..., 2]
+
+    align_z = torch.bmm(ee_z.unsqueeze(1), handle_z.unsqueeze(-1)).squeeze(-1).squeeze(-1)  # (N,)
+
+    reward = torch.sign(align_z) * align_z**2
+    z_bonus = (align_z >= align_threshold).float() * 0.5
+
+    return reward + z_bonus
+
+def align_ee_handle_z_curriculum_wrapped(env: ManagerBasedRLEnv) -> torch.Tensor:
+    _, align_threshold, _,_,_,_ = get_curriculum_thresholds(env)
+    return align_ee_handle_z(env, align_threshold)
+
+def align_ee_handle_x(env: ManagerBasedRLEnv, align_threshold) -> torch.Tensor:
+    """
+    Reward for aligning the end-effector X axis with the handle X axis.
+    """
+    ee_quat = env.scene["ee_frame"].data.target_quat_w[..., 0, :]
+    handle_quat = env.scene["handle_frame"].data.target_quat_w[..., 0, :]
+
+    ee_rot_mat = matrix_from_quat(ee_quat)
+    handle_mat = matrix_from_quat(handle_quat)
+
+    ee_x = ee_rot_mat[..., 0]
+    handle_x = handle_mat[..., 0]
+
+    align_x = torch.bmm(ee_x.unsqueeze(1), handle_x.unsqueeze(-1)).squeeze(-1).squeeze(-1)  # (N,)
+
+    reward = torch.sign(align_x) * align_x**4
+    x_bonus = (align_x >= align_threshold).float() * 0.5
+
+    return reward + x_bonus
+
+def align_ee_handle_x_curriculum_wrapped(env: ManagerBasedRLEnv) -> torch.Tensor:
+    _, align_threshold, _,_,_,_ = get_curriculum_thresholds(env)
+    return align_ee_handle_x(env, align_threshold)
+
+def penalty_joint1_3(env: ManagerBasedRLEnv) -> torch.Tensor:
+    """
+    Penalizza la deviazione dei giunti 1 e 3 dalla posizione 0.
+    """
+    try:
+        joint_names = env.scene["robot"].joint_names
+        joint_pos = env.scene["robot"].data.joint_pos  # (N, num_joints)
+
+        idx1 = joint_names.index("leg2joint1")
+        idx3 = joint_names.index("leg2joint3")
+
+        j1_pos = joint_pos[:, idx1]
+        j3_pos = joint_pos[:, idx3]
+
+        penalty = torch.abs(j1_pos) + torch.abs(j3_pos)
+
+        return penalty  # reward negativa crescente in base alla deviazione
+    except Exception:
+        return torch.zeros(env.num_envs, device=env.device)
+    
+def penalty_x(env: ManagerBasedRLEnv) -> torch.Tensor: #allineamento z solo se xy buono
+    try:
+        handle_pos = env.scene["handle_frame"].data.target_pos_w[..., 0, :]
+        ee_pos = env.scene["ee_frame"].data.target_pos_w[..., 0, :]
+
+        handle_x = handle_pos[..., 0] 
+        ee_x = ee_pos[..., 0]
+
+        penalty_x = (handle_x < ee_x).float()   # (N,)
+
+        return penalty_x 
+
+    except (KeyError, AttributeError):
+        return torch.zeros(env.num_envs, device=env.device)
+
+def collision_penalty(env: ManagerBasedRLEnv) -> torch.Tensor:
+    
+    try:
+        sensor = env.scene.sensors["contact_sensor_left1"]
+        contact_forces = sensor.data.force_matrix_w  # shape: (N, B, F, 3)
+        magnitudes = torch.norm(contact_forces, dim=-1).sum(dim=(-1, -2))  # sum across bodies and filters
+
+        sensor2 = env.scene.sensors["contact_sensor_right1"]
+        contact_forces2 = sensor2.data.force_matrix_w  # shape: (N, B, F, 3)
+        magnitudes2 = torch.norm(contact_forces2, dim=-1).sum(dim=(-1, -2))  # sum across bodies and filters
+
+        sensor3 = env.scene.sensors["contact_sensor_left2"]
+        contact_forces3 = sensor3.data.force_matrix_w  # shape: (N, B, F, 3)
+        magnitudes3 = torch.norm(contact_forces3, dim=-1).sum(dim=(-1, -2))  # sum across bodies and filters
+
+        sensor4 = env.scene.sensors["contact_sensor_right2"]
+        contact_forces4 = sensor4.data.force_matrix_w  # shape: (N, B, F, 3)
+        magnitudes4 = torch.norm(contact_forces4, dim=-1).sum(dim=(-1, -2))  # sum across bodies and filters
+
+        weight = weight_curriculum(env, start_value=-500, end_value=-1000, start_episode=0, end_episode=10000)
+
+
+        return weight*(magnitudes + magnitudes2 + magnitudes3 + magnitudes4)# penalità
+    except Exception:
+        return torch.zeros(env.num_envs, device=env.device)

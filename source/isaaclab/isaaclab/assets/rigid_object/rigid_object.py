@@ -121,6 +121,8 @@ class RigidObject(AssetBase):
             )
 
     def update(self, dt: float):
+        if not hasattr(self, "_data"):
+            raise RuntimeError("RigidObject: update() called before initialization (_data not set).")
         self._data.update(dt)
 
     """

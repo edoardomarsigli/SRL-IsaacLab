@@ -6,6 +6,7 @@ import isaaclab.sim as sim_utils
 from isaaclab.actuators import ImplicitActuatorCfg
 from isaaclab.assets import ArticulationCfg
 import isaaclab_tasks.manager_based.moonshot.utils as moonshot_utils
+from isaaclab.assets import RigidObjectCfg
 
 import math
 
@@ -23,6 +24,7 @@ Joint effort limits are in N*m (revolute), N (prismatic)
 
 '''
 scale2=100
+scale=1000
 
 DRAGON_ARTICULATED_CFG = ArticulationCfg(
     prim_path="{ENV_REGEX_NS}/hero_dragon",
@@ -47,7 +49,7 @@ DRAGON_ARTICULATED_CFG = ArticulationCfg(
     ),
     init_state=ArticulationCfg.InitialStateCfg(
     pos=(0.0, 0.0, 0.3),
-    joint_pos={"leg2grip1":-0.029, "leg2joint1":0.0, "leg2joint2":math.radians(135), "leg2joint3":0.0, "leg2joint4":math.radians(180), 
+    joint_pos={"leg2grip1":-0.029, "leg2joint1":0.0, "leg2joint2":math.radians(135), "leg2joint3":0.0, "leg2joint4":math.radians(170), 
                "leg2joint5":0.0, "leg2joint6":math.radians(170), "leg2joint7":0.0, "leg2grip2":0.0},
     ),
 
@@ -57,10 +59,10 @@ DRAGON_ARTICULATED_CFG = ArticulationCfg(
 
     # "leg2grip1": ImplicitActuatorCfg(
     #     joint_names_expr=["leg2grip1"],
-    #     effort_limit_sim=30,
-    #     velocity_limit_sim=5*0.15,
-    #     stiffness = 3000,
-    #     damping = 5,                 # per evitare vibrazioni
+    #     effort_limit_sim=scale2*136.11,
+    #     velocity_limit_sim=10000*0.15,
+    #     stiffness = scale2*0.966,
+    #     damping = scale2*0.234,                # per evitare vibrazioni
     #     ),
 
 
@@ -91,7 +93,7 @@ DRAGON_ARTICULATED_CFG = ArticulationCfg(
     "leg2joint2": ImplicitActuatorCfg(
         joint_names_expr=["leg2joint2"],
         effort_limit_sim=scale2*136.11,
-        velocity_limit_sim=5*0.15,
+        velocity_limit_sim=10*0.15,
         stiffness = scale2*0.966,
         damping = scale2*0.234,
     ),

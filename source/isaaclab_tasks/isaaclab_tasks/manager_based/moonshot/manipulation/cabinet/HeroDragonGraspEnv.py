@@ -1,10 +1,9 @@
 from isaaclab.envs import ManagerBasedRLEnv
 import torch
-import atexit
 
 from isaaclab_tasks.manager_based.moonshot.manipulation.cabinet.mdp import Event as mdp_events
 from isaaclab_tasks.manager_based.moonshot.manipulation.cabinet.mdp.rewards import get_curriculum_thresholds
-
+from isaaclab.assets.rigid_object.rigid_object import RigidObject
 
 
 class HeroDragonGraspEnv(ManagerBasedRLEnv):
