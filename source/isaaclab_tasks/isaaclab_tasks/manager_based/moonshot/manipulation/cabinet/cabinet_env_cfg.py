@@ -5,7 +5,7 @@
 
 
 from dataclasses import MISSING
-from isaaclab.managers import RecorderManagerBaseCfg
+
 
 import isaaclab.sim as sim_utils
 from isaaclab.assets import ArticulationCfg, AssetBaseCfg
@@ -27,11 +27,9 @@ from isaaclab.assets import AssetBaseCfg
 from isaaclab.sim import UsdFileCfg
 #from isaaclab.terrains.config.rough import PERLIN_TERRAIN_CFG
 
-from isaaclab.assets import RigidObjectCfg
-from typing import Dict
 
 
-
+from datetime import datetime
 
 
 ISAAC_LAB_PATH = moonshot_utils.find_isaaclab_path().replace("\\","/")
@@ -43,6 +41,7 @@ from isaaclab_tasks.manager_based.moonshot.manipulation.cabinet import mdp
 from isaaclab_tasks.manager_based.moonshot.manipulation.cabinet.mdp import Event as mdp_events
 
 
+from isaaclab.envs.mdp.recorders.recorders_cfg import ActionStateRecorderManagerCfg
 
 
 ##
@@ -53,6 +52,9 @@ from isaaclab.sensors.contact_sensor.contact_sensor_cfg import ContactSensorCfg
 
 FRAME_MARKER_SMALL_CFG = FRAME_MARKER_CFG.copy()
 FRAME_MARKER_SMALL_CFG.markers["frame"].scale = (0.10, 0.10, 0.10)
+
+from isaaclab_tasks.manager_based.moonshot.descriptions.config.terrain.rough import ROUGH_TERRAINS_CFG
+
 
 
 ##
@@ -68,21 +70,41 @@ class DragonGraspSceneCfg(InteractiveSceneCfg):
     ee_frame: FrameTransformerCfg = MISSING
     wheel_with_handle: ArticulationCfg= MISSING
 
+    # terrain = TerrainImporterCfg(
+    #     prim_path="/World/ground",
+    #     terrain_type="plane",
+    #     collision_group=-1,
+    #     physics_material=sim_utils.RigidBodyMaterialCfg(
+    #         friction_combine_mode="multiply",
+    #         restitution_combine_mode="multiply",
+    #         static_friction=1.0,
+    #         dynamic_friction=1.0,
+    #     ),
+    #     visual_material=sim_utils.MdlFileCfg(
+    #         mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
+    #         project_uvw=True,
+    #         texture_scale=(0.25, 0.25)),
+    #     debug_vis=False,
+    # )
+
     terrain = TerrainImporterCfg(
-        prim_path="/World/ground",
-        terrain_type="plane",
-        collision_group=-1,
-        physics_material=sim_utils.RigidBodyMaterialCfg(
-            friction_combine_mode="multiply",
-            restitution_combine_mode="multiply",
-            static_friction=1.0,
-            dynamic_friction=1.0,
-        ),
-        visual_material=sim_utils.MdlFileCfg(
-            mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
-            project_uvw=True,
-            texture_scale=(0.25, 0.25)),
-        debug_vis=True
+    prim_path="/World/ground",
+    terrain_type="generator",
+    terrain_generator=ROUGH_TERRAINS_CFG,
+    max_init_terrain_level=5,
+    collision_group=-1,
+    physics_material=sim_utils.RigidBodyMaterialCfg(
+        friction_combine_mode="multiply",
+        restitution_combine_mode="multiply",
+        static_friction=1.0,
+        dynamic_friction=1.0,
+    ),
+    visual_material=sim_utils.MdlFileCfg(
+        mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
+        project_uvw=True,
+        texture_scale=(0.25, 0.25),
+    ),
+    debug_vis=False,
     )
 
     # contact_sensor_left1 = ContactSensorCfg(
@@ -204,6 +226,20 @@ class DragonGraspSceneCfg(InteractiveSceneCfg):
             )
         ],
     )
+
+    joint2_frame=FrameTransformerCfg(
+        prim_path="{ENV_REGEX_NS}/hero_dragon/leg2link2",
+        debug_vis=True,
+        visualizer_cfg=FRAME_MARKER_SMALL_CFG.replace(prim_path="/Visuals/LFFrame"),
+        target_frames=[
+            FrameTransformerCfg.FrameCfg(
+                prim_path="{ENV_REGEX_NS}/hero_dragon/leg2link2",
+                name="joint6",
+                offset=OffsetCfg(pos=(0.0, 0.0, 0.0)),
+            )
+        ],
+    )
+
     wheel_frame=FrameTransformerCfg(
         prim_path="{ENV_REGEX_NS}/hero_dragon/base_link",
         debug_vis=True,
@@ -261,8 +297,13 @@ class ObservationsCfg:
     class PolicyCfg(ObsGroup):
         """Observations for policy group."""
 
-        joint_pos = ObsTerm(func=mdp.joint_pos_rel)
-        joint_vel = ObsTerm(func=mdp.joint_vel_rel)
+        joint_pos = ObsTerm(
+            func=mdp.joint_pos_rel,
+            # noise = Unoise(n_min=-0.01, n_max=0.01),
+        )
+        joint_vel = ObsTerm(func=mdp.joint_vel_rel, 
+            # noise = Unoise(n_min=-0.01, n_max=0.01),
+        )
 
         rel_ee__distance = ObsTerm(func=mdp.rel_ee__distance)
 
@@ -283,7 +324,7 @@ class ObservationsCfg:
         actions = ObsTerm(func=mdp.last_action) #da aggiungere piu avanti
 
         def __post_init__(self):
-            self.enable_corruption = True
+            self.enable_corruption = False
             self.concatenate_terms = True
 
     # observation groups
@@ -320,6 +361,33 @@ class EventCfg:
         },
     )
 
+    # reset_robot_position = EventTerm(
+    #     func=mdp_events.reset_root_state_uniform,
+    #     mode="reset",
+    #     params={
+    #         "pose_range": {
+    #             "x": (-0.05, 0.05),
+    #             "y": (-0.05, 0.05),
+    #             "z": (0.0, 0.0),
+    #             "roll": (0.0, 0.0),
+    #             "pitch": (0.0, 0.0),
+    #             "yaw": (-0.1, 0.1),
+    #         },
+    #         "velocity_range": {
+    #             "x": (0, 0),
+    #             "y": (0, 0),
+    #             "z": (0.0, 0.0),
+    #             "roll": (0.0, 0.0),
+    #             "pitch": (0.0, 0.0),
+    #             "yaw": (0.0, 0.0),
+    #         },
+    #         "asset_cfg": SceneEntityCfg("robot"),
+    #     },
+    # )
+
+
+
+
 
 # @configclass   #reward senza curriculum
 # class RewardsCfg:
@@ -355,11 +423,11 @@ class EventCfg:
 @configclass
 class RewardsCfg:   #reward con curriculum
 
-    align_ee_handle = RewTerm(func=mdp.align_ee_handle_curriculum_wrapped, weight=0.5)
+    align_ee_handle = RewTerm(func=mdp.align_ee_handle_curriculum_wrapped, weight=1)
     
     penalize_low_joints = RewTerm(func=mdp.penalize_low_joints_curriculum, weight=1, params={"threshold4": 0.25, "threshold_ee": 0.25})
     
-    reward_joint4_zyx = RewTerm(func=mdp.reward_joint4_zyx, weight=0.25)
+    reward_joint4_zyx = RewTerm(func=mdp.reward_joint4_zyx, weight=0.2)
     
     approach_zy = RewTerm(func=mdp.approach_zy_curriculum_wrapped, weight=1)
         
@@ -369,13 +437,17 @@ class RewardsCfg:   #reward con curriculum
 
     penalty_wheel = RewTerm(func=mdp.penalty_wheel, weight=-100.0)
 
+    penalize_collision = RewTerm(func=mdp.penalize_collision, weight=-5.0)
+
+    termination_penalty = RewTerm(func=mdp.is_terminated, weight=-400)
+
     #APPROACH GRASP
 
     align_grasp = RewTerm(func=mdp.align_grasp, weight=1.0)
 
     approach_grasp = RewTerm(func=mdp.approach_grasp, weight=1.0)  # offset da definire in base al curriculum
 
-    penalize_handle_drift = RewTerm(func=mdp.penalize_handle_drift, weight=-50)
+    penalize_handle_drift = RewTerm(func=mdp.penalize_handle_drift, weight=-10)
 
 
 
@@ -385,7 +457,7 @@ class RewardsCfg:   #reward con curriculum
 
     # grasp_handle2 = RewTerm(func=mdp.grasp2_curriculum_wrapped,weight=1)
 
-    keep_gripper1_closed = RewTerm(func=mdp.keep_gripper1_closed_curriculum_wrapped, weight=5)  
+    # keep_gripper1_closed = RewTerm(func=mdp.keep_gripper1_closed_curriculum_wrapped, weight=5)  
     
     # keep_g1_closed = RewTerm(func=mdp.keep_g1_closed_curriculum_wrapped, weight=1,)  
 
@@ -406,11 +478,14 @@ class TerminationsCfg:
 
     wheel_z = DoneTerm(func=mdp_events.terminate_wheel_z, params={"threshold": 0.35})
 
-    wheel = DoneTerm(func=mdp_events.terminate_wheel, params={"limit": 0.98})
+    wheel = DoneTerm(func=mdp_events.terminate_wheel)
 
-    # collision = DoneTerm(func=mdp_events.collision_termination, params={"threshold": 10})
+    # collision = DoneTerm(func=mdp_events.collision_termination)
 
-
+@configclass
+class RecorderCfg(ActionStateRecorderManagerCfg):
+    dataset_export_dir_path = "isaaclab_recordings_manipulation/"
+    dataset_filename = datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + "_action_states"
 
 
 @configclass
@@ -419,7 +494,11 @@ class DragonGraspEnvCfg(ManagerBasedRLEnvCfg):
     # recorders: RecorderCfg = RecorderCfg(dataset_export_mode=DatasetExportMode.EXPORT_ALL,  # o altro modo, vedi sotto
     # dataset_export_dir_path="/path/di/output",
     # dataset_filename="nome_file_output")
-    recorders: RecorderManagerBaseCfg = RecorderManagerBaseCfg()
+
+    # recorders: RecorderCfg = RecorderCfg(
+    # dataset_export_dir_path = "isaaclab_recordings_manipulation/",
+    # dataset_filename = datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + "_action_states"
+    # )
 
 
     observations: ObservationsCfg = ObservationsCfg()

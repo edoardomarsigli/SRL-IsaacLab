@@ -29,8 +29,9 @@ scale=1000
 DRAGON_ARTICULATED_CFG = ArticulationCfg(
     prim_path="{ENV_REGEX_NS}/hero_dragon",
     spawn=sim_utils.UsdFileCfg(
-        usd_path=ISAAC_LAB_PATH + "/source/isaaclab_tasks/isaaclab_tasks/manager_based/moonshot/descriptions/usd/robot/Hero_dragon_grip/hero_dragon_gripPY.usd",
-        activate_contact_sensors=True,
+        # usd_path=ISAAC_LAB_PATH + "/source/isaaclab_tasks/isaaclab_tasks/manager_based/moonshot/descriptions/usd/robot/Hero_dragon_grip/hero_dragon_gripPY.usd",
+        usd_path=ISAAC_LAB_PATH + "/source/isaaclab_tasks/isaaclab_tasks/manager_based/moonshot/descriptions/usd/robot/hero_dragon_man/hero_dragon_man.usd",
+
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             rigid_body_enabled=True,
             max_linear_velocity=1000.0,
@@ -49,10 +50,12 @@ DRAGON_ARTICULATED_CFG = ArticulationCfg(
     ),
     init_state=ArticulationCfg.InitialStateCfg(
     pos=(0.0, 0.0, 0.3),
-    joint_pos={"leg2grip1":-0.029, "leg2joint1":0.0, "leg2joint2":math.radians(135), "leg2joint3":0.0, "leg2joint4":math.radians(170), 
-               "leg2joint5":0.0, "leg2joint6":math.radians(170), "leg2joint7":0.0, "leg2grip2":0.0},
-    ),
-
+    # joint_pos={"leg2joint1":0.0, "leg2joint2":math.radians(135), "leg2joint3":0.0, "leg2joint4":math.radians(170), 
+    #            "leg2joint5":0.0, "leg2joint6":math.radians(170), "leg2joint7":0.0},
+    # ),
+    joint_pos={"leg2joint1":0.0, "leg2joint2":0, "leg2joint3":0.0, "leg2joint4":math.pi*(-1/3), 
+                "leg2joint5":0.0, "leg2joint6":math.pi*(1/2-1/8), "leg2joint7":0.0},
+        ),
     soft_joint_pos_limit_factor = 1.0,
     
     actuators = {
@@ -132,6 +135,10 @@ DRAGON_ARTICULATED_CFG = ArticulationCfg(
         stiffness =scale2*0.966,
         damping = scale2*0.234,
     ),
+
+
+
+
     # "leg2grip2": ImplicitActuatorCfg(
     #     joint_names_expr=["leg2grip2"],
     #     effort_limit_sim=30,
@@ -160,8 +167,7 @@ DRAGON_ARTICULATED_CFG = ArticulationCfg(
 WHEEL_WITH_HANDLE_CFG = ArticulationCfg(
     prim_path="{ENV_REGEX_NS}/hero_wheel",
     spawn=sim_utils.UsdFileCfg(
-        usd_path=ISAAC_LAB_PATH + "/source/isaaclab_tasks/isaaclab_tasks/manager_based/moonshot/descriptions/usd/robot/HERO_wheel/hero_wheel.usd",
-        activate_contact_sensors=True,
+        usd_path=ISAAC_LAB_PATH + "/source/isaaclab_tasks/isaaclab_tasks/manager_based/moonshot/descriptions/usd/robot/hero_wheel_man/hero_wheel.usd",
     ),
     init_state=ArticulationCfg.InitialStateCfg(
         pos=(1.6, 0.0, 0.4),  # adatta alla scena

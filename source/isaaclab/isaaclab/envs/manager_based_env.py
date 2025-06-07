@@ -155,6 +155,9 @@ class ManagerBasedEnv:
                 # update scene to pre populate data buffers for assets and sensors.
                 # this is needed for the observation manager to get valid tensors for initialization.
                 # this shouldn't cause an issue since later on, users do a reset over all the environments so the lazy buffers would be reset.
+                # for asset in self.scene.articulations.values():
+                #     asset._initialize_impl()
+
                 self.scene.update(dt=self.physics_dt)
             # add timeline event to load managers
             self.load_managers()

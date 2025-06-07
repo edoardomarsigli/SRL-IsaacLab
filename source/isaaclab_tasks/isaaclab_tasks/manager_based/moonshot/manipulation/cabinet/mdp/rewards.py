@@ -186,7 +186,7 @@ def reward_joint4_zyx(env: ManagerBasedRLEnv) -> torch.Tensor: #reward e penalit
 
     # weight = weight_curriculum(env, start_value=1, end_value=0.1, start_episode=0, end_episode=200)
 
-    return reward_z + reward_y + reward_x#* weight  # reward positivo se sopra soglia, zero altrimenti
+    return reward_z + reward_y*1.25 + reward_x*1.25 #* weight  # reward positivo se sopra soglia, zero altrimenti
 
 def approach_zy(env: ManagerBasedRLEnv) -> torch.Tensor: #allineamento xy e bonus solo se align ee handle buono
     """
@@ -229,7 +229,7 @@ def approach_zy_curriculum_wrapped(env: ManagerBasedRLEnv) -> torch.Tensor:
 
     global_episode_counter = env.episode_counter.min() #attivazione sincronizzata tra gli envs
 
-    if global_episode_counter >= 5:
+    if global_episode_counter >= 0:
         return approach_zy(env)
     else:
         return torch.zeros_like(approach_zy(env))    
@@ -304,23 +304,60 @@ def penalty_touch(env: ManagerBasedRLEnv) -> torch.Tensor:  # penalità per tocc
     except (KeyError, AttributeError):
         return torch.zeros(env.num_envs, device=env.device)
     
+# def penalty_wheel(env: ManagerBasedRLEnv) -> torch.Tensor:
+#     try:
+#         step = env.episode_length_buf  # (num_envs,)
+#         env_ids = torch.arange(env.num_envs, device=step.device)
+
+#         wheel_quat = env.scene["wheel_frame"].data.target_quat_w[..., 0, :]
+#         rot_mat = matrix_from_quat(wheel_quat)
+#         wheel_x = rot_mat[..., 0]
+
+#         # Inizializza la reference se non esiste
+#         if not hasattr(env, "wheel_ref_dir"):
+#             env.wheel_ref_dir = {
+#                 "x": torch.zeros_like(wheel_x),
+#                 "stored": torch.zeros(env.num_envs, dtype=torch.bool, device=env.device)
+#             }
+
+#         # Salva la direzione al 250° step
+#         save_mask = (step == 250)
+#         env.wheel_ref_dir["x"][save_mask] = wheel_x[save_mask]
+#         env.wheel_ref_dir["stored"][save_mask] = True
+
+#         valid_mask = (step > 250) & env.wheel_ref_dir["stored"]
+
+#         # Calcola l'angolo (dot product tra direzioni salvate e attuali)
+#         dot = torch.sum(wheel_x * env.wheel_ref_dir["x"], dim=-1)
+#         angle_diff = 1.0 - torch.abs(dot)  # distanza da perfetto allineamento
+
+#         # Penalità solo per env validi
+#         penalty = torch.zeros(env.num_envs, device=env.device)
+#         penalty[valid_mask] = angle_diff[valid_mask] * 2.0  # peso regolabile
+
+#         return torch.where(penalty >= 0.01, penalty, 0)
+
+#     except (KeyError, AttributeError):
+#         return torch.zeros(env.num_envs, device=env.device)
+    
 def penalty_wheel(env: ManagerBasedRLEnv) -> torch.Tensor:
     try:
         wheel_quat = env.scene["wheel_frame"].data.target_quat_w[..., 0, :]
         rot_mat = matrix_from_quat(wheel_quat)
-        wheel_x = rot_mat[..., 0]
+        wheel_x = rot_mat[..., 0]  # (N, 3)
 
-        x_env = torch.tensor([1.0, 0.0, 0.0], device=env.device).repeat(env.num_envs, 1)
-        align_x = torch.bmm(wheel_x.unsqueeze(1), x_env.unsqueeze(-1)).squeeze(-1).squeeze(-1)  # (N,)
+        origin_x = torch.tensor([1.0, 0.0, 0.0], device=env.device).expand(env.num_envs, 3)
 
 
-        # Penalità crescente: più si allontana da 1, peggiore è (linear or quadratic)
-        penalty = ((1.0 - align_x) *2)
+        # Allineamento via dot product (batch)
+        align_x = torch.bmm(wheel_x.unsqueeze(1), origin_x.unsqueeze(-1)).squeeze(-1).squeeze(-1)  # (N,)
 
-        return penalty
+
+        return 1- align_x
 
     except (KeyError, AttributeError):
         return torch.zeros(env.num_envs, device=env.device)
+
     
 
 #APPROACH
@@ -441,6 +478,20 @@ def penalize_handle_drift(env:ManagerBasedRLEnv) -> torch.Tensor:
     )
 
     return torch.where(penalty >= 0.002, penalty, 0)
+
+def penalize_collision(env)-> torch.Tensor:
+    try:
+    # Ottieni le posizioni dei giunti
+        joint2_pos = env.scene["joint2_frame"].data.target_pos_w[..., 0, :]
+        joint6_pos = env.scene["joint6_frame"].data.target_pos_w[..., 0, :]
+
+        distance = torch.norm(joint2_pos - joint6_pos, dim=-1, p=2)
+
+        # Penalità proporzionale alla distanza sotto soglia (opzionale)
+        return torch.where(distance < 0.4, 1/(1+distance) ,torch.zeros(env.num_envs, device=env.device))
+
+    except (KeyError, AttributeError):
+            return torch.zeros(env.num_envs, device=env.device)
 
 
 

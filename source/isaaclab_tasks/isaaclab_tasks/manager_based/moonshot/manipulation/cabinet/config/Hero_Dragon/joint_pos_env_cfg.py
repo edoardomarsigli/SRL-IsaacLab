@@ -33,9 +33,6 @@ ISAAC_LAB_PATH = moonshot_utils.find_isaaclab_path().replace("\\","/")
 
 from pathlib import Path
 
-usd_path = str((Path(__file__).parent / "/home/edomrl/SRL-IsaacLab/source/isaaclab_tasks/isaaclab_tasks/manager_based/moonshot/descriptions/usd/robot/HERO_wheel/hero_wheelfisso2.usd").resolve())
-
-
 
 @configclass
 class HeroDragonGraspEnvCfg(DragonGraspEnvCfg):
@@ -48,8 +45,7 @@ class HeroDragonGraspEnvCfg(DragonGraspEnvCfg):
         self.scene.env_spacing = 6
 
         self.scene.terrain.max_init_terrain_level = None
-        
-        self.observations.policy.enable_corruption = False
+    
         self.viewer.resolution = (2540,1440)
         self.viewer.eye = (0.8, 2, 0.8) # basic view
 
@@ -177,7 +173,18 @@ class HeroDragonGraspEnvCfg_PLAY(HeroDragonGraspEnvCfg):
         self.scene.env_spacing = 6
 
         self.scene.terrain.max_init_terrain_level = None
+
+        # self.scene.light = AssetBaseCfg(
+        #     prim_path="/World/light",
+        #     spawn=sim_utils.DistantLightCfg(color=(0.75, 0.75, 0.75), intensity=15000.0),
+        #     init_state=AssetBaseCfg.InitialStateCfg(rot = (0.52133, 0.47771, 0.47771, 0.52133))
+        # )
+
+        if self.scene.terrain.terrain_generator is not None:
+            self.scene.terrain.terrain_generator.num_rows = 8
+            self.scene.terrain.terrain_generator.num_cols = 4
+            self.scene.terrain.terrain_generator.curriculum = False
         
-        self.observations.policy.enable_corruption = False
         self.viewer.resolution = (2540,1440)
-        self.viewer.eye = (0.8, 2, 0.8) # basic view
+        self.viewer.eye = (0.5, 0, 0.8) # basic view
+        self.viewer.lookat = (0.8, -2.0, 0.5)

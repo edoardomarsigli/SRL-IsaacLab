@@ -24,7 +24,7 @@ gym.register(
 
 gym.register(
     id="Moonshot-Velocity-Flat-Hero-Dragon-Play-v0",
-    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    entry_point="isaaclab_tasks.manager_based.moonshot.locomotion.velocity.HeroDragonEnv:HeroDragonEnv",
     disable_env_checker=True,
     kwargs={
         "env_cfg_entry_point": f"{__name__}.flat_env_cfg:HeroDragonFlatEnvCfg_PLAY",
@@ -35,7 +35,7 @@ gym.register(
 
 gym.register(
     id="Moonshot-Velocity-Rough-Hero-Dragon-v0",
-    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    entry_point="isaaclab_tasks.manager_based.moonshot.locomotion.velocity.HeroDragonEnv:HeroDragonEnv",
     disable_env_checker=True,
     kwargs={
         "env_cfg_entry_point": f"{__name__}.rough_env_cfg:HeroDragonRoughEnvCfg",
@@ -46,7 +46,7 @@ gym.register(
 
 gym.register(
     id="Moonshot-Velocity-Rough-Hero-Dragon-Play-v0",
-    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    entry_point="isaaclab_tasks.manager_based.moonshot.locomotion.velocity.HeroDragonEnv:HeroDragonEnv",
     disable_env_checker=True,
     kwargs={
         "env_cfg_entry_point": f"{__name__}.rough_env_cfg:HeroDragonRoughEnvCfg_PLAY",
@@ -63,16 +63,5 @@ gym.register(
         "env_cfg_entry_point": f"{__name__}.rough_env_cfg:HeroDragonMoonEnvCfg_PLAY",
         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:HeroDragonRoughPPORunnerCfg",
         "skrl_cfg_entry_point": f"{agents.__name__}:skrl_rough_ppo_cfg.yaml",
-    },
-)
-##edo
-gym.register(
-    id="Moonshot-Velocity-Moon-Hero-Dragon-Play-v0_EDO",
-    entry_point="isaaclab.envs:ManagerBasedRLEnv",
-    disable_env_checker=True,
-    kwargs={
-        "env_cfg_entry_point": f"{__name__}.rough_env_cfg:HeroDragonMoonEnvCfg_PLAY_EDO",
-        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:HeroDragonRoughPPORunnerCfg_EDO",
-        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_rough_ppo_cfg_EDO.yaml",
     },
 )

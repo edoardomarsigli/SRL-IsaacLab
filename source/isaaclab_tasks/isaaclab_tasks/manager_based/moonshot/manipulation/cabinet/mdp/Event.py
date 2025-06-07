@@ -7,6 +7,9 @@ import torch
 from isaaclab.envs import ManagerBasedEnv
 from isaaclab.envs import ManagerBasedRLEnv
 from isaaclab.utils.math import matrix_from_quat
+from isaaclab.managers import SceneEntityCfg
+from typing import Tuple 
+
 
 
 # ======================================================================================
@@ -19,37 +22,6 @@ reset_joints_by_offset = base_events.reset_joints_by_offset
 
 reset_scene_to_default_original = base_events.reset_scene_to_default
 
-
-# def is_grasp_successful(env: ManagerBasedRLEnv,              #posso usarlo nei reward di gripper1 ma non nelle sue observation senno non piu madrl
-#                         threshold_distance: float = 0.01, 
-#                         threshold_finger_distance: float = 0.015, 
-#                         required_duration_s: float = 1.0) -> torch.Tensor:
-#     """
-#     Grasp è considerato riuscito se:
-#     - EE vicino alla handle (distanza <= threshold_distance)
-#     - LF e RF vicini a EE (distanza <= threshold_finger_distance)
-#     - Tutto questo mantenuto per almeno `required_duration_s` secondi.
-#     """
-
-#     # Posizioni
-#     handle_pos = env.scene["handle_frame"].data.target_pos_w[..., 0, :]
-#     ee_pos = env.scene["ee_frame"].data.target_pos_w[..., 0, :]
-#     lf_pos = env.scene["lf_frame"].data.target_pos_w[..., 0, :]
-#     rf_pos = env.scene["rf_frame"].data.target_pos_w[..., 0, :]
-
-#     # Distanze
-#     ee_handle_dist = torch.norm(handle_pos - ee_pos, dim=-1, p=2)
-#     lf_ee_dist = torch.norm(lf_pos - ee_pos, dim=-1, p=2)
-#     rf_ee_dist = torch.norm(rf_pos - ee_pos, dim=-1, p=2)
-
-#     # Condizioni di distanza
-#     is_ee_close = ee_handle_dist <= threshold_distance
-#     is_lf_close = lf_ee_dist <= threshold_finger_distance
-#     is_rf_close = rf_ee_dist <= threshold_finger_distance
-
-#     grasp_success = is_ee_close & is_lf_close & is_rf_close
-
-#     return grasp_success
 
 def is_grasp_successful(env: ManagerBasedRLEnv) -> torch.Tensor:
     """
@@ -115,41 +87,106 @@ def terminate_wheel_z(env, threshold: float) -> torch.Tensor:
         return torch.zeros(env.num_envs, dtype=torch.bool, device=env.device)    
     
 
-def terminate_wheel(env: ManagerBasedRLEnv, limit: float) -> torch.Tensor:
+# def terminate_wheel(env: ManagerBasedRLEnv, limit: float) -> torch.Tensor:
+#     try:
+#         step = env.episode_length_buf  # (num_envs,)
+#         env_ids = torch.arange(env.num_envs, device=step.device)
+
+#         wheel_quat = env.scene["wheel_frame"].data.target_quat_w[..., 0, :]
+#         rot_mat = matrix_from_quat(wheel_quat)
+#         wheel_x = rot_mat[..., 0]  # direzione X della ruota
+
+#         # Inizializza reference se non esiste
+#         if not hasattr(env, "wheel_ref_dir"):
+#             env.wheel_ref_dir = {
+#                 "x": torch.zeros_like(wheel_x),
+#                 "stored": torch.zeros(env.num_envs, dtype=torch.bool, device=env.device)
+#             }
+
+#         # Salva la direzione al 250° step
+#         save_mask = (step == 100)
+#         env.wheel_ref_dir["x"][save_mask] = wheel_x[save_mask]
+#         env.wheel_ref_dir["stored"][save_mask] = True
+
+#         # Verifica se siamo oltre lo step 250 e se abbiamo una reference valida
+#         valid_mask = (step > 250) & env.wheel_ref_dir["stored"]
+
+#         # Calcola angolo tra direzione attuale e reference
+#         dot = torch.sum(wheel_x * env.wheel_ref_dir["x"], dim=-1)  # cos(theta)
+#         angle_diff = 1.0 - torch.abs(dot)  # deviazione angolare (0 = allineato)
+
+#         # Termina se differenza è oltre soglia (es. 0.01)
+#         terminate = torch.zeros(env.num_envs, dtype=torch.bool, device=env.device)
+#         terminate[valid_mask] = angle_diff[valid_mask] > 0.005
+
+#         return terminate
+
+#     except (KeyError, AttributeError):
+#         # Fallback: non terminare mai se manca qualcosa
+#         return torch.zeros(env.num_envs, dtype=torch.bool, device=env.device)
+
+def terminate_wheel(env: ManagerBasedRLEnv) -> torch.Tensor:
     try:
-
-        wheel_quat = env.scene["wheel_frame"].data.target_quat_w[..., 0, :]  
-
+        wheel_quat = env.scene["wheel_frame"].data.target_quat_w[..., 0, :]
         rot_mat = matrix_from_quat(wheel_quat)
+        wheel_x = rot_mat[..., 0]  # (N, 3)
 
-        wheel_x = rot_mat[..., 0]
-        
-        x_env = torch.tensor([1.0, 0.0, 0.0], device=env.device).repeat(env.num_envs, 1) 
-        align_x = torch.bmm(wheel_x.unsqueeze(1), x_env.unsqueeze(-1)).squeeze(-1).squeeze(-1) 
+        # Asse X del mondo
+        # world_x = torch.tensor([1.0, 0.0, 0.0], device=env.device).expand(env.num_envs, 3)
 
-        return align_x < limit 
+        origin_x = torch.tensor([1.0, 0.0, 0.0], device=env.device).expand(env.num_envs, 3)
+
+
+        # Allineamento via dot product (batch)
+        align_x = torch.bmm(wheel_x.unsqueeze(1), origin_x.unsqueeze(-1)).squeeze(-1).squeeze(-1)  # (N,)
+
+
+        return align_x<0.98
+
     except (KeyError, AttributeError):
-        return torch.zeros(env.num_envs, dtype=torch.bool, device=env.device)
+        return torch.zeros(env.num_envs, device=env.device, dtype=torch.bool)
 
-def collision_termination(env: ManagerBasedRLEnv, threshold: float) -> torch.Tensor:
+
+
+
+# def collision_termination(env: ManagerBasedRLEnv, threshold: float) -> torch.Tensor:
+#     try:
+#         sensor = env.scene.sensors["contact_sensor_left1"]
+#         contact_forces = sensor.data.force_matrix_w  # shape: (N, B, F, 3)
+#         magnitude = torch.norm(contact_forces, dim=-1).sum(dim=(-1, -2))  # sum across bodies and filters
+
+#         sensor2 = env.scene.sensors["contact_sensor_right1"]
+#         contact_forces2 = sensor2.data.force_matrix_w  # shape: (N, B, F, 3)
+#         magnitude2 = torch.norm(contact_forces2, dim=-1).sum(dim=(-1, -2))  # sum across bodies and filters
+
+#         sensor3 = env.scene.sensors["contact_sensor_left2"]
+#         contact_forces3 = sensor3.data.force_matrix_w  # shape: (N, B, F, 3)
+#         magnitude3 = torch.norm(contact_forces3, dim=-1).sum(dim=(-1, -2))  # sum across bodies and filters
+
+#         sensor4 = env.scene.sensors["contact_sensor_right2"]
+#         contact_forces4 = sensor4.data.force_matrix_w  # shape: (N, B, F, 3)
+#         magnitude4 = torch.norm(contact_forces4, dim=-1).sum(dim=(-1, -2))  # sum across bodies and filters
+
+#         mask = ((magnitude > threshold)|(magnitude2 > threshold)|(magnitude3 > threshold)|(magnitude4 > threshold)).any(dim=-1).any(dim=-1)  # (N,)
+#         return mask
+#     except Exception:
+#         return torch.zeros(env.num_envs, dtype=torch.bool, device=env.device)
+
+def collision_termination(env: ManagerBasedRLEnv) -> torch.Tensor:
     try:
-        sensor = env.scene.sensors["contact_sensor_left1"]
-        contact_forces = sensor.data.force_matrix_w  # shape: (N, B, F, 3)
-        magnitude = torch.norm(contact_forces, dim=-1).sum(dim=(-1, -2))  # sum across bodies and filters
+    # Ottieni le posizioni dei giunti
+        joint2_pos = env.scene["joint2_frame"].data.target_pos_w[..., 0, :]
+        joint6_pos = env.scene["joint6_frame"].data.target_pos_w[..., 0, :]
 
-        sensor2 = env.scene.sensors["contact_sensor_right1"]
-        contact_forces2 = sensor2.data.force_matrix_w  # shape: (N, B, F, 3)
-        magnitude2 = torch.norm(contact_forces2, dim=-1).sum(dim=(-1, -2))  # sum across bodies and filters
+        distance = torch.norm(joint2_pos - joint6_pos, dim=-1, p=2)
 
-        sensor3 = env.scene.sensors["contact_sensor_left2"]
-        contact_forces3 = sensor3.data.force_matrix_w  # shape: (N, B, F, 3)
-        magnitude3 = torch.norm(contact_forces3, dim=-1).sum(dim=(-1, -2))  # sum across bodies and filters
+        # Penalità proporzionale alla distanza sotto soglia (opzionale)
+        return distance < 0.2  # Soglia di distanza, ad esempio 0.05
 
-        sensor4 = env.scene.sensors["contact_sensor_right2"]
-        contact_forces4 = sensor4.data.force_matrix_w  # shape: (N, B, F, 3)
-        magnitude4 = torch.norm(contact_forces4, dim=-1).sum(dim=(-1, -2))  # sum across bodies and filters
+    except (KeyError, AttributeError):
+            return torch.zeros(env.num_envs, device=env.device)
+    
 
-        mask = ((magnitude > threshold)|(magnitude2 > threshold)|(magnitude3 > threshold)|(magnitude4 > threshold)).any(dim=-1).any(dim=-1)  # (N,)
-        return mask
-    except Exception:
-        return torch.zeros(env.num_envs, dtype=torch.bool, device=env.device)
+reset_root_state_uniform = base_events.reset_root_state_uniform
+
+

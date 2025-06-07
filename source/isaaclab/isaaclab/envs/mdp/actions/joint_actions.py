@@ -217,6 +217,54 @@ class JointVelocityAction(JointAction):
         self._asset.set_joint_velocity_target(self.processed_actions, joint_ids=self._joint_ids)
 
 
+
+class SharedJointVelocityAction(ActionTerm):
+    """
+    Custom action term that applies a single scalar velocity action to multiple joints.
+    """
+
+    def __init__(self, cfg, env):
+        super().__init__(cfg, env)
+        self._asset: Articulation = self._env.scene[self.cfg.asset_name]
+        self._joint_ids, self._joint_names = self._asset.find_joints(
+            self.cfg.joint_names, preserve_order=True
+        )
+        self._num_joints = len(self._joint_ids)
+
+        # Buffers
+        self._raw_actions = torch.zeros((self.num_envs, 1), device=self.device)
+        self._processed_actions = torch.zeros((self.num_envs, self._num_joints), device=self.device)
+
+        # Scale
+        self._scale = float(cfg.scale) if isinstance(cfg.scale, (float, int)) else 1.0
+        self._offset = float(cfg.offset) if hasattr(cfg, "offset") else 0.0
+
+    @property
+    def action_dim(self) -> int:
+        # Solo 1 valore in input
+        return 1
+
+    @property
+    def raw_actions(self) -> torch.Tensor:
+        return self._raw_actions
+
+    @property
+    def processed_actions(self) -> torch.Tensor:
+        return self._processed_actions
+
+    def process_actions(self, actions: torch.Tensor):
+        self._raw_actions[:] = actions  # shape: (num_envs, 1)
+        scalar_action = actions[:, 0:1] * self._scale + self._offset  # shape: (num_envs, 1)
+        self._processed_actions = scalar_action.expand(-1, self._num_joints)
+
+    def apply_actions(self):
+        self._asset.set_joint_velocity_target(self._processed_actions, joint_ids=self._joint_ids)
+
+    def reset(self, env_ids: Sequence[int] | None = None) -> None:
+        self._raw_actions[env_ids] = 0.0
+
+
+
 class JointEffortAction(JointAction):
     """Joint action term that applies the processed actions to the articulation's joints as effort commands."""
 

@@ -14,14 +14,14 @@ from .terrain_generator_cfg import TerrainGeneratorCfg
 ROUGH_TERRAINS_CFG = TerrainGeneratorCfg(
     size=(6, 6),
     border_width=20.0,
-    num_rows = 100,
-    num_cols = 200,
+    num_rows = 64,
+    num_cols = 64,
     horizontal_scale=0.1,
     vertical_scale=0.005,
     slope_threshold=0.75,
-    use_cache=False,
-    curriculum=True,
-    difficulty_range=(0.0,1.0),
+    use_cache=True,
+    curriculum=False,
+    difficulty_range=(0.0,0.0),
     sub_terrains={
         # "pyramid_stairs": terrain_gen.MeshPyramidStairsTerrainCfg(
         #     proportion=0.2,
@@ -42,9 +42,9 @@ ROUGH_TERRAINS_CFG = TerrainGeneratorCfg(
         # "boxes": terrain_gen.MeshRandomGridTerrainCfg(
         #     proportion=0.2, grid_width=0.45, grid_height_range=(0.05, 0.2), platform_width=2.0
         # ),
-        # "random_rough": terrain_gen.HfRandomUniformTerrainCfg(
-        #     proportion=0.2, noise_range=(0.001, 0.03), noise_step=0.01, border_width=0.25
-        # ),
+        "random_rough": terrain_gen.HfRandomUniformTerrainCfg(
+            proportion=0.2, noise_range=(0.001, 0.03), noise_step=0.01, border_width=0.25
+        ),
         "moonlike_noise": terrain_gen.HfRandomUniformTerrainCfg(
             proportion=0.2,
             noise_range=(0.002, 0.02),   # valori piccoli per sabbia fine

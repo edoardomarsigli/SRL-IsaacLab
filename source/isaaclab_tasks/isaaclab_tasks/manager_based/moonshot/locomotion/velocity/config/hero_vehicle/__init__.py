@@ -24,7 +24,7 @@ gym.register(
 
 gym.register(
     id="Moonshot-Velocity-Flat-Hero-Vehicle-Play-v0",
-    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    entry_point="isaaclab_tasks.manager_based.moonshot.locomotion.velocity.HeroDragonEnv:HeroDragonEnv",
     disable_env_checker=True,
     kwargs={
         "env_cfg_entry_point": f"{__name__}.flat_env_cfg:HeroVehicleFlatEnvCfg_PLAY",

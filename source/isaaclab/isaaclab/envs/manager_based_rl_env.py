@@ -182,10 +182,13 @@ class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
 
 
 
+
+
         # 🔧 FIX: chiama pre_physics_step se definito
         if hasattr(self, "pre_physics_step"):
             self.pre_physics_step(self.action_manager.process_action)
             # print("🔄 pre_physics_step called")
+
 
 
 
@@ -260,8 +263,25 @@ class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
         # robot = self.scene["robot"]
         # joint_names = robot.data.joint_names
 
-        # with torch.no_grad():
-        #         robot.data.joint_pos[:, joint_names.index("leg2joint7")] = torch.tensor(0.0, device=robot.data.joint_pos.device)
+        # if self._sim_step_counter % 100 == 0:  # ogni 100 step  MOSTRA CHE SHAREDJOINTVEL FUNZIONA
+        #     robot = self.scene["robot"]
+        #     joint_names = robot.data.joint_names
+
+        #     wheel_joints = [
+        #         "wheel14_left_joint",
+        #         "wheel14_right_joint",
+        #         "wheel12_left_joint",
+        #         "wheel12_right_joint",
+        #     ]
+
+        #     for name in wheel_joints:
+        #         if name in joint_names:
+        #             idx = joint_names.index(name)
+        #             actual_vel = robot.data.joint_vel[:, idx]           # velocità attuale
+        #             target_vel = robot.data.joint_vel_target[:, idx]   # velocità target impostata dalle azioni
+        #             print(f"[DEBUG][{name}] vel: {actual_vel[0].item():.4f}, target: {target_vel[0].item():.4f}", flush=True)
+
+
 
 
         # if self._sim_step_counter % 1 == 0:  # ogni 100 step
@@ -462,6 +482,21 @@ class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
 
         # reset the episode length buffer
         self.episode_length_buf[env_ids] = 0
+
+        # -------------------------
+        # 📈 Curriculum: modifica frequenza comandi in base al numero di episodi
+        # min_episodes = self.episode_counter.min().item()
+        # cmd = self.command_manager.get_term("body_velocity")
+
+        # if min_episodes < 1000:
+        #     cmd.cfg.resampling_time_range = (30.0, 30.0)
+        # elif min_episodes < 3000:
+        #     cmd.cfg.resampling_time_range = (15.0, 20.0)
+        # else:
+        #     cmd.cfg.resampling_time_range = (5.0, 15.0)
+
+        # -------------------------
+
 
         if hasattr(self, "episode_counter"):
             self.episode_counter[env_ids] += 1

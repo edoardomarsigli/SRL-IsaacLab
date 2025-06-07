@@ -281,28 +281,53 @@ class TerrainImporter:
     Operations - Origins.
     """
 
-    def configure_env_origins(self, origins: np.ndarray | torch.Tensor | None = None):
-        """Configure the origins of the environments based on the added terrain.
+    # def configure_env_origins(self, origins: np.ndarray | torch.Tensor | None = None):
+    #     """Configure the origins of the environments based on the added terrain.
 
-        Args:
-            origins: The origins of the sub-terrains. Shape is (num_rows, num_cols, 3).
-        """
-        # decide whether to compute origins in a grid or based on curriculum
+    #     Args:
+    #         origins: The origins of the sub-terrains. Shape is (num_rows, num_cols, 3).
+    #     """
+    #     # decide whether to compute origins in a grid or based on curriculum
+    #     if origins is not None:
+    #         # convert to numpy
+    #         if isinstance(origins, np.ndarray):
+    #             origins = torch.from_numpy(origins)
+    #         # store the origins
+    #         self.terrain_origins = origins.to(self.device, dtype=torch.float)
+    #         # compute environment origins
+    #         self.env_origins = self._compute_env_origins_curriculum(self.cfg.num_envs, self.terrain_origins)
+    #     else:
+    #         self.terrain_origins = None
+    #         # check if env spacing is valid
+    #         if self.cfg.env_spacing is None:
+    #             raise ValueError("Environment spacing must be specified for configuring grid-like origins.")
+    #         # compute environment origins
+    #         self.env_origins = self._compute_env_origins_grid(self.cfg.num_envs, self.cfg.env_spacing)
+
+    def configure_env_origins(self, origins: np.ndarray | torch.Tensor | None = None):    #PER NON AVERE ENV SOVRAPPOSTI
         if origins is not None:
-            # convert to numpy
             if isinstance(origins, np.ndarray):
                 origins = torch.from_numpy(origins)
-            # store the origins
             self.terrain_origins = origins.to(self.device, dtype=torch.float)
-            # compute environment origins
-            self.env_origins = self._compute_env_origins_curriculum(self.cfg.num_envs, self.terrain_origins)
+
+            # Evita duplicati: assegna env a sub-terrains unici
+            num_rows, num_cols = self.terrain_origins.shape[:2]
+            num_patches = num_rows * num_cols
+
+            if self.cfg.num_envs > num_patches:
+                raise ValueError("Hai più env che sub-terrains disponibili!")
+
+            indices = torch.randperm(num_patches)[:self.cfg.num_envs]
+            rows = indices // num_cols
+            cols = indices % num_cols
+
+            self.env_origins = self.terrain_origins[rows, cols]
         else:
             self.terrain_origins = None
-            # check if env spacing is valid
             if self.cfg.env_spacing is None:
                 raise ValueError("Environment spacing must be specified for configuring grid-like origins.")
-            # compute environment origins
             self.env_origins = self._compute_env_origins_grid(self.cfg.num_envs, self.cfg.env_spacing)
+
 
     def update_env_origins(self, env_ids: torch.Tensor, move_up: torch.Tensor, move_down: torch.Tensor):
         """Update the environment origins based on the terrain levels."""
@@ -320,6 +345,8 @@ class TerrainImporter:
         )
         # update the env origins
         self.env_origins[env_ids] = self.terrain_origins[self.terrain_levels[env_ids], self.terrain_types[env_ids]]
+
+        
 
     """
     Internal helpers.
