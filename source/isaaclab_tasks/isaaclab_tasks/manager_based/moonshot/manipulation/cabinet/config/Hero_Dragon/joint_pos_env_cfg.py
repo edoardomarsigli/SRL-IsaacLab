@@ -40,11 +40,11 @@ class HeroDragonGraspEnvCfg(DragonGraspEnvCfg):
         # post init of parent
         super().__post_init__()
 
-        self.grasp_completed = None
-
         self.scene.env_spacing = 6
 
         self.scene.terrain.max_init_terrain_level = None
+
+        # self.scene.terrain.terrain_generator.curriculum = False
     
         self.viewer.resolution = (2540,1440)
         self.viewer.eye = (0.8, 2, 0.8) # basic view
@@ -183,7 +183,7 @@ class HeroDragonGraspEnvCfg_PLAY(HeroDragonGraspEnvCfg):
         if self.scene.terrain.terrain_generator is not None:
             self.scene.terrain.terrain_generator.num_rows = 8
             self.scene.terrain.terrain_generator.num_cols = 4
-            self.scene.terrain.terrain_generator.curriculum = False
+            # self.scene.terrain.terrain_generator.curriculum = False
         
         self.viewer.resolution = (2540,1440)
         self.viewer.eye = (0.5, 0, 0.8) # basic view

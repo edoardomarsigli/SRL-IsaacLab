@@ -22,13 +22,13 @@ class HeroDragonGraspPPORunnerCfg(RslRlOnPolicyRunnerCfg):
         activation="elu",        
     )
     algorithm = RslRlPpoAlgorithmCfg(
-        value_loss_coef=2.0,
+        value_loss_coef=1.0,
         use_clipped_value_loss=True,
         clip_param=0.2,
-        entropy_coef=5e-3,
+        entropy_coef=2e-3,
         num_learning_epochs=10,
         num_mini_batches=64,
-        learning_rate=1.0e-4,
+        learning_rate=1.0e-3,
         schedule="adaptive",
         gamma=0.99,
         lam=0.95,

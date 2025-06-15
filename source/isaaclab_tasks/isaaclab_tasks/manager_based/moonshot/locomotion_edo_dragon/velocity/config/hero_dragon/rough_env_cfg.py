@@ -36,7 +36,7 @@ ISAAC_LAB_PATH = moonshot_utils.find_isaaclab_path().replace("\\","/")
 # Robot Base Link Name (desired base)
 ##
 # BASE_NAME: str = "leg1link4"
-BASE_NAME: str = "leg1link2"
+BASE_NAME: str = "leg4link2"
 WHEEL_ONLY_MODE: bool = False
 
 @configclass
@@ -53,39 +53,84 @@ class HeroDragonEnvCfg(LocomotionDragonEnvCfg):
         # self.scene.terrain.terrain_generator.sub_terrains["random_rough"].noise_range=(0.001, 0.03) 
         # self.scene.terrain.terrain_generator.sub_terrains["random_rough"].noise_step=0.01
 
-        # commands
-        self.commands.body_velocity.body_name = BASE_NAME
-        self.commands.body_velocity = mdp.UniformVelocityCommandCfg(
-            asset_name="robot",
-            resampling_time_range=(5, 15),
-            rel_standing_envs=0.02,
-            rel_heading_envs=1.0,
-            heading_command=False,
-            heading_control_stiffness=0.5,
-            debug_vis=True,
-            ranges=mdp.UniformVelocityCommandCfg.Ranges(
-                lin_vel_x=(-0.12, 0.12), 
-                ang_vel_z=(-math.pi/12, math.pi/12), 
-                lin_vel_y=(-0.0, 0.0),
-                heading=(-math.pi, math.pi)
-            ),
-        )
 
         # observations
         self.observations.policy.body_lin_vel.params["body_name"] = BASE_NAME
         self.observations.policy.body_ang_vel.params["body_name"] = BASE_NAME
         
-        # actions
+        # # actions
+        # self.actions.j1_action = mdp.JointPositionActionCfg(
+        # asset_name="robot",
+        # joint_names=["leg1joint1"],
+        # scale = 0.5,
+        # use_default_offset=True
+        # )
+
+        # self.actions.j2_action = mdp.JointPositionActionCfg(
+        # asset_name="robot",
+        # joint_names=["leg1joint2"],
+        # scale = 0.5,
+        # use_default_offset=True
+        # )
+
+        # # self.actions.j3_action = mdp.JointPositionActionCfg(
+        # # asset_name="robot",
+        # # joint_names=["leg1joint3"],
+        # # scale=3.1,
+        # # clip={"leg1joint3": (-3.1, 3.1)},
+        # # )
+
+        # self.actions.j4_action = mdp.JointPositionActionCfg(
+        # asset_name="robot",
+        # joint_names=["leg1joint4"],
+        # scale = 0.5,
+        # use_default_offset=True
+        # )
+
+        # # self.actions.j5_action = mdp.JointPositionActionCfg(
+        # # asset_name="robot",
+        # # joint_names=["leg1joint5"],
+        # # scale=3.1,
+        # # clip={"leg1joint5": (-3.1, 3.1)},
+        # # )
+
+        # self.actions.j6_action = mdp.JointPositionActionCfg(
+        # asset_name="robot",
+        # joint_names=["leg1joint6"],
+        # scale = 0.5,
+        # use_default_offset=True
+        # )
+
+        # self.actions.j7_action = mdp.JointPositionActionCfg(
+        # asset_name="robot",
+        # joint_names=["leg1joint7"],
+        # scale = 0.5,
+        # use_default_offset=True
+        # )
+
+        # self.actions.wheels_action = mdp.JointVelocityActionCfg(
+        #     class_type=mdp.SharedJointVelocityAction,  # <--- usa la tua nuova classe
+        #     asset_name="robot",
+        #     joint_names=[
+        #         "wheel11_right_joint",
+        #         "wheel11_left_joint",
+        #         "wheel12_right_joint",
+        #         "wheel12_left_joint",
+        #     ],
+        #     scale=5.0
+        # )
+
+                # actions
         self.actions.j1_action = mdp.JointPositionActionCfg(
         asset_name="robot",
-        joint_names=["leg1joint1"],
+        joint_names=["leg4joint1"],
         scale = 0.5,
         use_default_offset=True
         )
 
         self.actions.j2_action = mdp.JointPositionActionCfg(
         asset_name="robot",
-        joint_names=["leg1joint2"],
+        joint_names=["leg4joint2"],
         scale = 0.5,
         use_default_offset=True
         )
@@ -99,7 +144,7 @@ class HeroDragonEnvCfg(LocomotionDragonEnvCfg):
 
         self.actions.j4_action = mdp.JointPositionActionCfg(
         asset_name="robot",
-        joint_names=["leg1joint4"],
+        joint_names=["leg4joint4"],
         scale = 0.5,
         use_default_offset=True
         )
@@ -113,14 +158,14 @@ class HeroDragonEnvCfg(LocomotionDragonEnvCfg):
 
         self.actions.j6_action = mdp.JointPositionActionCfg(
         asset_name="robot",
-        joint_names=["leg1joint6"],
+        joint_names=["leg4joint6"],
         scale = 0.5,
         use_default_offset=True
         )
 
         self.actions.j7_action = mdp.JointPositionActionCfg(
         asset_name="robot",
-        joint_names=["leg1joint7"],
+        joint_names=["leg4joint7"],
         scale = 0.5,
         use_default_offset=True
         )
@@ -129,8 +174,8 @@ class HeroDragonEnvCfg(LocomotionDragonEnvCfg):
             class_type=mdp.SharedJointVelocityAction,  # <--- usa la tua nuova classe
             asset_name="robot",
             joint_names=[
-                "wheel11_right_joint",
-                "wheel11_left_joint",
+                "wheel14_right_joint",
+                "wheel14_left_joint",
                 "wheel12_right_joint",
                 "wheel12_left_joint",
             ],
@@ -151,7 +196,7 @@ class HeroDragonEnvCfg(LocomotionDragonEnvCfg):
         # event
         self.events.push_robot = None
         self.events.add_base_mass = None
-        self.events.reset_robot_joints.params["steering_joints"] = ("leg1joint2","leg1joint4","leg1joint6")
+        self.events.reset_robot_joints.params["steering_joints"] = ("leg4joint2","leg4joint4","leg4joint6")
         self.events.reset_base.params = {
             "pose_range": {"x": (-0.0, 0.0), "y": (-0.0, 0.0), "yaw": (0,0)},
             "velocity_range": {
@@ -167,7 +212,7 @@ class HeroDragonEnvCfg(LocomotionDragonEnvCfg):
         # rewards
         self.rewards.track_lin_vel_xy_exp = RewTerm(
             func=mdp.track_lin_vel_xy_exp, 
-            weight=1.0, 
+            weight=3.0, 
             params= {
                 "command_name": "body_velocity",
                 "std": math.sqrt(0.01)
@@ -175,7 +220,7 @@ class HeroDragonEnvCfg(LocomotionDragonEnvCfg):
         )
         self.rewards.track_ang_vel_z_exp = RewTerm(
             func=mdp.track_ang_vel_z_exp, 
-            weight=1.0, 
+            weight=3.0, 
             params= {
                 "command_name": "body_velocity",
                 "std": math.sqrt(0.01)

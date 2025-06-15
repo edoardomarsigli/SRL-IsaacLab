@@ -66,3 +66,32 @@ def terminate_wheel_z(env: ManagerBasedRLEnv) -> torch.Tensor:
         return (pen_front | pen_rear)
     except KeyError:
         return torch.zeros(env.num_envs, dtype=torch.bool, device=env.device)
+    
+import torch.nn.functional as F
+    
+def terminate_angle(env: ManagerBasedRLEnv) -> torch.Tensor:
+    """
+    Termina l'episodio se il vettore front_wheel → joint2 si discosta più di 10° dal target di 45°.
+    """
+    # Posizioni frame nel mondo
+    front_wheel_pos = env.scene["front_wheel_frame"].data.target_pos_w[..., 0, :]
+    joint2_pos = env.scene["joint2_frame"].data.target_pos_w[..., 0, :]
+
+    # Vettore normalizzato ruota → giunto
+    front_vec = F.normalize(joint2_pos - front_wheel_pos, dim=-1)
+
+    # Asse Z mondo
+    z_axis = torch.tensor([0.0, 0.0, 1.0], device=front_vec.device)
+
+    # Angolo tra vettore e asse Z
+    angle_front = torch.acos(torch.clamp(torch.sum(front_vec * z_axis, dim=-1), -1.0, 1.0))
+
+    # Angolo target e soglia di deviazione
+    target_angle = torch.pi / 4       # 45°
+    max_deviation = torch.deg2rad(torch.tensor(30.0, device=front_vec.device))  # ≈ 0.1745 rad
+
+    # Termina se errore > soglia
+    terminate = torch.abs(angle_front - target_angle) > max_deviation
+
+    return terminate
+

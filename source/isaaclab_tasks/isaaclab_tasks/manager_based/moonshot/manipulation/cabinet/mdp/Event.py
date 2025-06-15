@@ -28,13 +28,15 @@ def is_grasp_successful(env: ManagerBasedRLEnv) -> torch.Tensor:
     Restituisce un BoolTensor (N_envs,) True dove il grasp è valido.
     """
     # Esempio fittizio:
+    ee_pos=env.scene["ee_frame"].data.target_pos_w[..., 0, :]
+    handle_pos=env.scene["handle_frame"].data.target_pos_w[..., 0, :]
     # check se gripper è chiuso e la distanza con handle è bassa
-    distance = torch.norm(env.scene["ee_frame"].data.target_pos_w[..., 0, :] - env.scene["handle_frame"].data.target_pos_w[..., 0, :], dim=-1)
+    distance = torch.norm(ee_pos - handle_pos, dim=-1, p=2)
     #grip_closed = env.actions.gripper_action.current_actions < -0.9
 
     #return (distance < 0.03) & grip_closed
 
-    return (distance < 0.03)
+    return (distance < 0.04)
 
 
 def terminate_if_low(env, threshold4: float, threshold6: float, threshold_ee: float) -> torch.Tensor:

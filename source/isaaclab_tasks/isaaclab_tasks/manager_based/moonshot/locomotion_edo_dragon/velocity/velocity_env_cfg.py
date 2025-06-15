@@ -57,6 +57,9 @@ FRAME_MARKER_SMALL_CFG.markers["frame"].scale = (0.10, 0.10, 0.10)
 class HeroDragonSceneCfg(InteractiveSceneCfg):
     """Configuration for the terrain scene with a Moonbot robot."""
 
+    # num_envs: int = 4096  # ⬅️ AGGIUNGI QUESTA LINEA
+    # env_spacing: float = 10.0
+
     # terrain (rough)
     terrain = TerrainImporterCfg(
         prim_path="/World/ground",
@@ -80,49 +83,111 @@ class HeroDragonSceneCfg(InteractiveSceneCfg):
     robot: ArticulationCfg = MISSING
     # wheel_with_handle: ArticulationCfg= MISSING
 
+    # joint2_frame=FrameTransformerCfg(
+    #     prim_path="{ENV_REGEX_NS}/hero_dragon_realsense/leg1link2",
+    #     debug_vis=True,
+    #     visualizer_cfg=FRAME_MARKER_SMALL_CFG.replace(prim_path="/Visuals/LFFrame"),
+    #     target_frames=[
+    #         FrameTransformerCfg.FrameCfg(
+    #             prim_path="{ENV_REGEX_NS}/hero_dragon_realsense/leg1link2",
+    #             name="leg1link2",
+    #             offset=OffsetCfg(pos=(0.0, 0.0, 0.0)),
+    #         )
+    #     ],
+    # )
+    # joint4_frame=FrameTransformerCfg(
+    #     prim_path="{ENV_REGEX_NS}/hero_dragon_realsense/leg1link4",
+    #     debug_vis=True,
+    #     visualizer_cfg=FRAME_MARKER_SMALL_CFG.replace(prim_path="/Visuals/LFFrame"),
+    #     target_frames=[
+    #         FrameTransformerCfg.FrameCfg(
+    #             prim_path="{ENV_REGEX_NS}/hero_dragon_realsense/leg1link4",
+    #             name="leg1link4",
+    #             offset=OffsetCfg(pos=(0.0, 0.0, 0.0)),
+    #         )
+    #     ],
+    # )
+    # joint6_frame=FrameTransformerCfg(
+    #     prim_path="{ENV_REGEX_NS}/hero_dragon_realsense/leg1link6",
+    #     debug_vis=True,
+    #     visualizer_cfg=FRAME_MARKER_SMALL_CFG.replace(prim_path="/Visuals/LFFrame"),
+    #     target_frames=[
+    #         FrameTransformerCfg.FrameCfg(
+    #             prim_path="{ENV_REGEX_NS}/hero_dragon_realsense/leg1link6",
+    #             name="leg1link6",
+    #             offset=OffsetCfg(pos=(0.0, 0.0, 0.0)),
+    #         )
+    #     ],
+    # )
+    # rear_wheel_frame=FrameTransformerCfg(
+    #     prim_path="{ENV_REGEX_NS}/hero_dragon_realsense/wheel12_body",
+    #     debug_vis=True,
+    #     visualizer_cfg=FRAME_MARKER_SMALL_CFG.replace(prim_path="/Visuals/LFFrame"),
+    #     target_frames=[
+    #         FrameTransformerCfg.FrameCfg(
+    #             prim_path="{ENV_REGEX_NS}/hero_dragon_realsense/wheel12_body",
+    #             name="rear_wheel",
+    #             offset=OffsetCfg(pos=(0.0, 0.0, 0.0)),
+    #         )
+    #     ],
+    # )
+
+    # front_wheel_frame=FrameTransformerCfg(
+    #     prim_path="{ENV_REGEX_NS}/hero_dragon_realsense/wheel11_body",
+    #     debug_vis=True,
+    #     visualizer_cfg=FRAME_MARKER_SMALL_CFG.replace(prim_path="/Visuals/LFFrame"),
+    #     target_frames=[
+    #         FrameTransformerCfg.FrameCfg(
+    #             prim_path="{ENV_REGEX_NS}/hero_dragon_realsense/wheel11_body",
+    #             name="front_wheel",
+    #             offset=OffsetCfg(pos=(0.0, 0.0, 0.0)),
+    #         )
+    #     ],
+    # )
+
     joint2_frame=FrameTransformerCfg(
-        prim_path="{ENV_REGEX_NS}/hero_dragon_realsense/leg1link2",
+        prim_path="{ENV_REGEX_NS}/hero_dragon_realsense/leg4link2",
         debug_vis=True,
         visualizer_cfg=FRAME_MARKER_SMALL_CFG.replace(prim_path="/Visuals/LFFrame"),
         target_frames=[
             FrameTransformerCfg.FrameCfg(
-                prim_path="{ENV_REGEX_NS}/hero_dragon_realsense/leg1link2",
-                name="leg1link2",
+                prim_path="{ENV_REGEX_NS}/hero_dragon_realsense/leg4link2",
+                name="leg4link2",
                 offset=OffsetCfg(pos=(0.0, 0.0, 0.0)),
             )
         ],
     )
     joint4_frame=FrameTransformerCfg(
-        prim_path="{ENV_REGEX_NS}/hero_dragon_realsense/leg1link4",
+        prim_path="{ENV_REGEX_NS}/hero_dragon_realsense/leg4link4",
         debug_vis=True,
         visualizer_cfg=FRAME_MARKER_SMALL_CFG.replace(prim_path="/Visuals/LFFrame"),
         target_frames=[
             FrameTransformerCfg.FrameCfg(
-                prim_path="{ENV_REGEX_NS}/hero_dragon_realsense/leg1link4",
-                name="leg1link4",
+                prim_path="{ENV_REGEX_NS}/hero_dragon_realsense/leg4link4",
+                name="leg4link4",
                 offset=OffsetCfg(pos=(0.0, 0.0, 0.0)),
             )
         ],
     )
     joint6_frame=FrameTransformerCfg(
-        prim_path="{ENV_REGEX_NS}/hero_dragon_realsense/leg1link6",
+        prim_path="{ENV_REGEX_NS}/hero_dragon_realsense/leg4link6",
         debug_vis=True,
         visualizer_cfg=FRAME_MARKER_SMALL_CFG.replace(prim_path="/Visuals/LFFrame"),
         target_frames=[
             FrameTransformerCfg.FrameCfg(
-                prim_path="{ENV_REGEX_NS}/hero_dragon_realsense/leg1link6",
-                name="leg1link6",
+                prim_path="{ENV_REGEX_NS}/hero_dragon_realsense/leg4link6",
+                name="leg4link6",
                 offset=OffsetCfg(pos=(0.0, 0.0, 0.0)),
             )
         ],
     )
     rear_wheel_frame=FrameTransformerCfg(
-        prim_path="{ENV_REGEX_NS}/hero_dragon_realsense/wheel12_body",
+        prim_path="{ENV_REGEX_NS}/hero_dragon_realsense/wheel14_body",
         debug_vis=True,
         visualizer_cfg=FRAME_MARKER_SMALL_CFG.replace(prim_path="/Visuals/LFFrame"),
         target_frames=[
             FrameTransformerCfg.FrameCfg(
-                prim_path="{ENV_REGEX_NS}/hero_dragon_realsense/wheel12_body",
+                prim_path="{ENV_REGEX_NS}/hero_dragon_realsense/wheel14_body",
                 name="rear_wheel",
                 offset=OffsetCfg(pos=(0.0, 0.0, 0.0)),
             )
@@ -130,12 +195,12 @@ class HeroDragonSceneCfg(InteractiveSceneCfg):
     )
 
     front_wheel_frame=FrameTransformerCfg(
-        prim_path="{ENV_REGEX_NS}/hero_dragon_realsense/wheel11_body",
+        prim_path="{ENV_REGEX_NS}/hero_dragon_realsense/wheel12_body",
         debug_vis=True,
         visualizer_cfg=FRAME_MARKER_SMALL_CFG.replace(prim_path="/Visuals/LFFrame"),
         target_frames=[
             FrameTransformerCfg.FrameCfg(
-                prim_path="{ENV_REGEX_NS}/hero_dragon_realsense/wheel11_body",
+                prim_path="{ENV_REGEX_NS}/hero_dragon_realsense/wheel12_body",
                 name="front_wheel",
                 offset=OffsetCfg(pos=(0.0, 0.0, 0.0)),
             )
@@ -164,9 +229,8 @@ class HeroDragonSceneCfg(InteractiveSceneCfg):
 class CommandsCfg:
     """Command specifications for the MDP."""
 
-    body_velocity = mdp.UniformBodyVelocityCommandCfg(
+    body_velocity = mdp.UniformVelocityCommandCfg(
         asset_name="robot",
-        body_name = MISSING,
         resampling_time_range=(30, 30),
         rel_standing_envs=0.02,
         rel_heading_envs=1.0,
@@ -174,7 +238,7 @@ class CommandsCfg:
         heading_control_stiffness=0.5,
         debug_vis=True,
         ranges=mdp.UniformBodyVelocityCommandCfg.Ranges(
-            lin_vel_x=(-0.12, 0.12), 
+            lin_vel_x=(-1.12, 1.12), 
             ang_vel_z=(-math.pi/12, math.pi/12), 
             lin_vel_y=(-0.0, 0.0),
             heading=(-math.pi, math.pi)
@@ -346,7 +410,7 @@ class RewardsCfg:
     # # -- task
     track_lin_vel_xy_exp = RewTerm(
         func=mdp.track_lin_vel_xy_exp_vehicle, 
-        weight=2.0, 
+        weight=3.0, 
         params={
             "command_name": "body_velocity",
             "body_name": MISSING, 
@@ -355,7 +419,7 @@ class RewardsCfg:
     )
     track_ang_vel_z_exp = RewTerm(
         func=mdp.track_ang_vel_z_exp_vehicle, 
-        weight=2.0, 
+        weight=3.0, 
         params={
             "command_name": "body_velocity", 
             "body_name": MISSING,
@@ -369,7 +433,7 @@ class RewardsCfg:
     dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-7)
     action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-1.0e-2)
     # energy = RewTerm(func=mdp.power_consumption, weight=-2.5e-2, params={"gear_ratio": {".*": 1.0}})
-    upright_wheel_bodies = RewTerm(func=mdp.upright_wheel_bodies_angle,weight = 1.5)
+    upright_wheel_bodies = RewTerm(func=mdp.upright_wheel_bodies_angle,weight = 2)
     low_joint = RewTerm(func=mdp.penalize_low_joint,weight=-0.3)
     # narrow_wheels = RewTerm(func=mdp.penalize_narrow_wheel, weight=-0.5)
     wheel_z= RewTerm(func=mdp.wheel_z, weight=15.0)
@@ -395,6 +459,7 @@ class TerminationsCfg:
     low_joint= DoneTerm(func=mdp.terminate_low_joint)
 
     wheel_z = DoneTerm(func=mdp.terminate_wheel_z)
+    terminate_angle= DoneTerm(func=mdp.terminate_angle)  
 
 
 @configclass
@@ -424,7 +489,7 @@ class LocomotionDragonEnvCfg(ManagerBasedRLEnvCfg):
     """Configuration for the locomotion velocity-tracking environment."""
 
     # Scene settings
-    scene: HeroDragonSceneCfg = HeroDragonSceneCfg(num_envs=1096, env_spacing=10)
+    scene: HeroDragonSceneCfg = HeroDragonSceneCfg(num_envs=4096, env_spacing=10)
     # Basic settings
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()
@@ -440,7 +505,7 @@ class LocomotionDragonEnvCfg(ManagerBasedRLEnvCfg):
         """Post initialization."""
         # general settings
         self.decimation = 4
-        self.episode_length_s = 10.0
+        self.episode_length_s = 30.0
         # simulation settings
         self.sim.dt = 0.005
         self.sim.render_interval = self.decimation

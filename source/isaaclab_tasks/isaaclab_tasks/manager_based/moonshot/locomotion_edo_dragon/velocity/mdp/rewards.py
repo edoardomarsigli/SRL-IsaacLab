@@ -392,11 +392,11 @@ def track_lin_vel_xy_exp_vehicle(
     body_link_idx = asset.find_bodies(body_name)[0][0]
     body_lin_vel_w = asset.data.body_lin_vel_w[:, body_link_idx, :]
     body_quat_w = asset.data.body_quat_w[:, body_link_idx, :]
-    if body_name == "leg1link2":
+    if body_name == "leg4link2":
         tf_d_matrix = torch.tensor([[-1,0,0],[0,0,1],[0,1,0]], device = env.device)
         tf_d_matrix_expanded = tf_d_matrix.unsqueeze(0).expand(env.num_envs, -1, -1)
         tf_d_quat = math_utils.quat_from_matrix(tf_d_matrix_expanded)
-    elif body_name == "leg1link4":
+    elif body_name == "leg4link4":
         tf_d_matrix = torch.tensor([[0,0,-1],[-1,0,0],[0,1,0]], device = env.device)
         tf_d_matrix_expanded = tf_d_matrix.unsqueeze(0).expand(env.num_envs, -1, -1)
         tf_d_quat = math_utils.quat_from_matrix(tf_d_matrix_expanded)    
@@ -414,8 +414,10 @@ def track_lin_vel_xy_exp_vehicle(
         torch.square(env.command_manager.get_command(command_name)[:, :2] - body_lin_vel_d[:, :2]),
         dim=1,
     )
+
+    reward = 1.0 / (1.0 + lin_vel_error)
     
-    return torch.exp(-lin_vel_error / std**2)
+    return reward
 
 def track_ang_vel_z_exp_vehicle(env: ManagerBasedRLEnv, std: float, command_name: str, body_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
 ) -> torch.Tensor:
@@ -428,7 +430,9 @@ def track_ang_vel_z_exp_vehicle(env: ManagerBasedRLEnv, std: float, command_name
     # compute the error
     ang_vel_error = torch.square(env.command_manager.get_command(command_name)[:, 2] - body_ang_vel_w[:, 2])
 
-    return torch.exp(-ang_vel_error / std**2)
+    reward = 1.0 / (1.0 + ang_vel_error)
+
+    return reward
 
 def joint_torques_dragon_l2(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
     """Penalize leg joint torques applied on the articulation using L2 squared kernel.
@@ -441,8 +445,8 @@ def joint_torques_dragon_l2(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = 
     wheel_joint_names = [
         "wheel12_left_joint",
         "wheel12_right_joint",
-        "wheel11_left_joint",
-        "wheel11_right_joint",
+        "wheel14_left_joint",
+        "wheel14_right_joint",
     ] 
 
     wheel_joint_idx = {asset.find_joints(name)[0][0] for name in wheel_joint_names}

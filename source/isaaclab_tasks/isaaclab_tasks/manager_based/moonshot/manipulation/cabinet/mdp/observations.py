@@ -98,6 +98,20 @@ def ee_quat(env: ManagerBasedRLEnv, make_quat_unique: bool = True) -> torch.Tens
         return torch.tensor([[0.0, 0.0, 0.0, 1.0]] * env.num_envs, device=env.device)
     
 
+def handle_quat(env: ManagerBasedRLEnv, make_quat_unique: bool = True) -> torch.Tensor:
+    """Returns the orientation (quaternion) of the end-effector in the world frame.
+    If `make_quat_unique` is True, ensures the quaternion has a positive real part to avoid discontinuities.
+    If the frame is not yet available, returns identity quaternions.
+    """
+    try:
+        handle_tf_data: FrameTransformerData = env.scene["handle_frame"].data
+        handle_quat = handle_tf_data.target_quat_w[..., 0, :] 
+        return math_utils.quat_unique(handle_quat) if make_quat_unique else handle_quat
+    except (KeyError, AttributeError):
+        # Se il frame non è pronto, ritorna quaternioni identità (0, 0, 0, 1)
+        return torch.tensor([[0.0, 0.0, 0.0, 1.0]] * env.num_envs, device=env.device)
+    
+
 def gripper1_pos(env: ManagerBasedRLEnv) -> torch.Tensor:
     """Returns the joint position of gripper1 (leg2grip1)."""
     try:

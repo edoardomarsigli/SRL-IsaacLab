@@ -27,6 +27,8 @@ from isaaclab.assets import AssetBaseCfg
 from isaaclab.sim import UsdFileCfg
 #from isaaclab.terrains.config.rough import PERLIN_TERRAIN_CFG
 
+from isaaclab.utils.noise import UniformNoiseCfg
+from isaaclab.utils.noise import GaussianNoiseCfg
 
 
 from datetime import datetime
@@ -57,6 +59,7 @@ from isaaclab_tasks.manager_based.moonshot.descriptions.config.terrain.rough imp
 
 
 
+
 ##
 # Scene definition
 ##
@@ -70,42 +73,42 @@ class DragonGraspSceneCfg(InteractiveSceneCfg):
     ee_frame: FrameTransformerCfg = MISSING
     wheel_with_handle: ArticulationCfg= MISSING
 
-    # terrain = TerrainImporterCfg(
-    #     prim_path="/World/ground",
-    #     terrain_type="plane",
-    #     collision_group=-1,
-    #     physics_material=sim_utils.RigidBodyMaterialCfg(
-    #         friction_combine_mode="multiply",
-    #         restitution_combine_mode="multiply",
-    #         static_friction=1.0,
-    #         dynamic_friction=1.0,
-    #     ),
-    #     visual_material=sim_utils.MdlFileCfg(
-    #         mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
-    #         project_uvw=True,
-    #         texture_scale=(0.25, 0.25)),
-    #     debug_vis=False,
-    # )
-
     terrain = TerrainImporterCfg(
-    prim_path="/World/ground",
-    terrain_type="generator",
-    terrain_generator=ROUGH_TERRAINS_CFG,
-    max_init_terrain_level=5,
-    collision_group=-1,
-    physics_material=sim_utils.RigidBodyMaterialCfg(
-        friction_combine_mode="multiply",
-        restitution_combine_mode="multiply",
-        static_friction=1.0,
-        dynamic_friction=1.0,
-    ),
-    visual_material=sim_utils.MdlFileCfg(
-        mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
-        project_uvw=True,
-        texture_scale=(0.25, 0.25),
-    ),
-    debug_vis=False,
+        prim_path="/World/ground",
+        terrain_type="plane",
+        collision_group=-1,
+        physics_material=sim_utils.RigidBodyMaterialCfg(
+            friction_combine_mode="multiply",
+            restitution_combine_mode="multiply",
+            static_friction=1.0,
+            dynamic_friction=1.0,
+        ),
+        visual_material=sim_utils.MdlFileCfg(
+            mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
+            project_uvw=True,
+            texture_scale=(0.25, 0.25)),
+        debug_vis=False,
     )
+
+    # terrain = TerrainImporterCfg(
+    # prim_path="/World/ground",
+    # terrain_type="generator",
+    # terrain_generator=ROUGH_TERRAINS_CFG,
+    # max_init_terrain_level=5,
+    # collision_group=-1,
+    # physics_material=sim_utils.RigidBodyMaterialCfg(
+    #     friction_combine_mode="multiply",
+    #     restitution_combine_mode="multiply",
+    #     static_friction=1.0,
+    #     dynamic_friction=1.0,
+    # ),
+    # visual_material=sim_utils.MdlFileCfg(
+    #     mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
+    #     project_uvw=True,
+    #     texture_scale=(0.25, 0.25),
+    # ),
+    # debug_vis=False,
+    # )
 
     # contact_sensor_left1 = ContactSensorCfg(
     #     prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper2_jaw_left",
@@ -163,44 +166,44 @@ class DragonGraspSceneCfg(InteractiveSceneCfg):
         ],
     )
 
-    lf2_frame=FrameTransformerCfg(
-        prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper2_jaw_left",   #associato a giunto grip2
-        debug_vis=False,
-        visualizer_cfg=FRAME_MARKER_SMALL_CFG.replace(prim_path="/Visuals/LFFrame"),
-        target_frames=[
-            FrameTransformerCfg.FrameCfg(
-                prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper2_jaw_left",
-                name="lf2",
-                offset=OffsetCfg(pos=(0.0, 0.0, 0.0)),
-            )
-        ],
-    )
+    # lf2_frame=FrameTransformerCfg(
+    #     prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper2_jaw_left",   #associato a giunto grip2
+    #     debug_vis=False,
+    #     visualizer_cfg=FRAME_MARKER_SMALL_CFG.replace(prim_path="/Visuals/LFFrame"),
+    #     target_frames=[
+    #         FrameTransformerCfg.FrameCfg(
+    #             prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper2_jaw_left",
+    #             name="lf2",
+    #             offset=OffsetCfg(pos=(0.0, 0.0, 0.0)),
+    #         )
+    #     ],
+    # )
 
-    rf1_frame=FrameTransformerCfg(
-        prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper1_jaw_right",  #associato a giunto grip1
-        debug_vis=False, 
-        visualizer_cfg=FRAME_MARKER_SMALL_CFG.replace(prim_path="/Visuals/RFFrame"),
-        target_frames=[
-            FrameTransformerCfg.FrameCfg(
-                prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper1_jaw_right",
-                name="rf1",
-                offset=OffsetCfg(pos=(0.0, 0.0, 0.0)),
-            )
-        ],
-    )
+    # rf1_frame=FrameTransformerCfg(
+    #     prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper1_jaw_right",  #associato a giunto grip1
+    #     debug_vis=False, 
+    #     visualizer_cfg=FRAME_MARKER_SMALL_CFG.replace(prim_path="/Visuals/RFFrame"),
+    #     target_frames=[
+    #         FrameTransformerCfg.FrameCfg(
+    #             prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper1_jaw_right",
+    #             name="rf1",
+    #             offset=OffsetCfg(pos=(0.0, 0.0, 0.0)),
+    #         )
+    #     ],
+    # )
 
-    lf1_frame=FrameTransformerCfg(
-        prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper1_jaw_left", #associato a giunto grip1bis
-        debug_vis=False,
-        visualizer_cfg=FRAME_MARKER_SMALL_CFG.replace(prim_path="/Visuals/LFFrame"),
-        target_frames=[
-            FrameTransformerCfg.FrameCfg(
-                prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper1_jaw_left",
-                name="lf1",
-                offset=OffsetCfg(pos=(0.0, 0.0, 0.0)),
-            )
-        ],
-    )
+    # lf1_frame=FrameTransformerCfg(
+    #     prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper1_jaw_left", #associato a giunto grip1bis
+    #     debug_vis=False,
+    #     visualizer_cfg=FRAME_MARKER_SMALL_CFG.replace(prim_path="/Visuals/LFFrame"),
+    #     target_frames=[
+    #         FrameTransformerCfg.FrameCfg(
+    #             prim_path="{ENV_REGEX_NS}/hero_dragon/leg2gripper1_jaw_left",
+    #             name="lf1",
+    #             offset=OffsetCfg(pos=(0.0, 0.0, 0.0)),
+    #         )
+    #     ],
+    # )
 
     joint4_frame=FrameTransformerCfg(
         prim_path="{ENV_REGEX_NS}/hero_dragon/leg2link4",
@@ -299,26 +302,28 @@ class ObservationsCfg:
 
         joint_pos = ObsTerm(
             func=mdp.joint_pos_rel,
-            # noise = Unoise(n_min=-0.01, n_max=0.01),
+    #         noise = GaussianNoiseCfg(
+    #         mean = 0.0,
+    #         std = 0.005,
+    #         operation = "add"
+    # ),
         )
         joint_vel = ObsTerm(func=mdp.joint_vel_rel, 
-            # noise = Unoise(n_min=-0.01, n_max=0.01),
-        )
+        #     noise = GaussianNoiseCfg(
+        #     mean = 0.0,
+        #     std = 0.005,
+        #     operation = "add")
+         )
 
         rel_ee__distance = ObsTerm(func=mdp.rel_ee__distance)
 
         ee_pos = ObsTerm(func=mdp.ee_pos)
 
-        handle_pos = ObsTerm(func=mdp.handle_pos)
-
-        # rel_rf__distance = ObsTerm(func=mdp.rel_rf__distance)
-
-        # rel_lf__distance = ObsTerm(func=mdp.rel_lf__distance)
-
         ee_quat = ObsTerm(func=mdp.ee_quat)
 
-        gripper1= ObsTerm(func=mdp.gripper1_pos)
-        gripper2= ObsTerm(func=mdp.gripper2_pos)
+        handle_pos = ObsTerm(func=mdp.handle_pos)
+
+        handle_quat = ObsTerm(func=mdp.handle_quat)
 
 
         actions = ObsTerm(func=mdp.last_action) #da aggiungere piu avanti
@@ -361,29 +366,29 @@ class EventCfg:
         },
     )
 
-    # reset_robot_position = EventTerm(
-    #     func=mdp_events.reset_root_state_uniform,
-    #     mode="reset",
-    #     params={
-    #         "pose_range": {
-    #             "x": (-0.05, 0.05),
-    #             "y": (-0.05, 0.05),
-    #             "z": (0.0, 0.0),
-    #             "roll": (0.0, 0.0),
-    #             "pitch": (0.0, 0.0),
-    #             "yaw": (-0.1, 0.1),
-    #         },
-    #         "velocity_range": {
-    #             "x": (0, 0),
-    #             "y": (0, 0),
-    #             "z": (0.0, 0.0),
-    #             "roll": (0.0, 0.0),
-    #             "pitch": (0.0, 0.0),
-    #             "yaw": (0.0, 0.0),
-    #         },
-    #         "asset_cfg": SceneEntityCfg("robot"),
-    #     },
-    # )
+    reset_robot_position = EventTerm(
+        func=mdp_events.reset_root_state_uniform,
+        mode="reset",
+        params={
+            "pose_range": {
+                "x": (-0.05, 0.05),
+                "y": (-0.05, 0.05),
+                "z": (0.0, 0.0),
+                "roll": (0.0, 0.0),
+                "pitch": (0.0, 0.0),
+                "yaw": (-0.1, 0.1),
+            },
+            "velocity_range": {
+                "x": (0, 0),
+                "y": (0, 0),
+                "z": (0.0, 0.0),
+                "roll": (0.0, 0.0),
+                "pitch": (0.0, 0.0),
+                "yaw": (0.0, 0.0),
+            },
+            "asset_cfg": SceneEntityCfg("robot"),
+        },
+    )
 
 
 
@@ -429,7 +434,7 @@ class RewardsCfg:   #reward con curriculum
     
     reward_joint4_zyx = RewTerm(func=mdp.reward_joint4_zyx, weight=0.2)
     
-    approach_zy = RewTerm(func=mdp.approach_zy_curriculum_wrapped, weight=1)
+    approach_zy = RewTerm(func=mdp.approach_zy_curriculum_wrapped, weight=2)
         
     approach_x = RewTerm(func=mdp.approach_x_curriculum_wrapped, weight=2)
 
@@ -439,15 +444,15 @@ class RewardsCfg:   #reward con curriculum
 
     penalize_collision = RewTerm(func=mdp.penalize_collision, weight=-5.0)
 
-    termination_penalty = RewTerm(func=mdp.is_terminated, weight=-400)
+    # termination_penalty = RewTerm(func=mdp.is_terminated, weight=-400)
 
     #APPROACH GRASP
 
-    align_grasp = RewTerm(func=mdp.align_grasp, weight=1.0)
+    # align_grasp = RewTerm(func=mdp.align_grasp, weight=0.1)
 
-    approach_grasp = RewTerm(func=mdp.approach_grasp, weight=1.0)  # offset da definire in base al curriculum
+    # approach_grasp = RewTerm(func=mdp.approach_grasp, weight=0.1)  # offset da definire in base al curriculum
 
-    penalize_handle_drift = RewTerm(func=mdp.penalize_handle_drift, weight=-10)
+    penalize_handle_drift = RewTerm(func=mdp.penalize_handle_drift, weight=-100)
 
 
 
@@ -478,9 +483,9 @@ class TerminationsCfg:
 
     wheel_z = DoneTerm(func=mdp_events.terminate_wheel_z, params={"threshold": 0.35})
 
-    wheel = DoneTerm(func=mdp_events.terminate_wheel)
+    # wheel = DoneTerm(func=mdp_events.terminate_wheel)
 
-    # collision = DoneTerm(func=mdp_events.collision_termination)
+    collision = DoneTerm(func=mdp_events.collision_termination)
 
 @configclass
 class RecorderCfg(ActionStateRecorderManagerCfg):

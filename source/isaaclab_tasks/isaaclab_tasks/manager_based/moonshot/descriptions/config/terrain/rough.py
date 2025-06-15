@@ -49,7 +49,7 @@ ROUGH_TERRAINS_CFG = TerrainGeneratorCfg(
             proportion=0.2,
             noise_range=(0.002, 0.02),   # valori piccoli per sabbia fine
             noise_step=0.005,            # più piccolo = più liscio
-            border_width=0.1,
+            border_width=0.0,
         )
         # "hf_pyramid_slope": terrain_gen.HfPyramidSlopedTerrainCfg(
         #     proportion=0.1, slope_range=(0.0, 0.4), platform_width=0.1, border_width=0.25
